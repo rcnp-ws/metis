@@ -1,6 +1,6 @@
 # @filename storeDAta.py
 # Create : 2020-10-07 12:25:12 JST (ota)
-# Last Modified : 2020-10-08 10:14:44 JST (ota)
+# Last Modified : 2020-10-08 10:49:53 JST (ota)
 from dbstore import dbstore 
 import time
 
@@ -36,7 +36,7 @@ class json_dbstore (dbstore) :
       doUpdate = False if self.cursor.fetchone() is None else True
       sql = ""
       if doUpdate :
-         sql = "update %s ts = '%s', data = '%s' where type = %s" % (self.table,ts,data,type)
+         sql = "update %s set ts = '%s', data = '%s' where type = '%s'" % (self.table,ts,data,type)
       else :
          sql = "insert into %s (ts, type, data) values ('%s', '%s', '%s')" % (self.table, ts, type, data)
       self.execute(sql)

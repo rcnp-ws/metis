@@ -15,34 +15,41 @@
     </ul>
 -->
     <!--    <p>>Object のレンダリング</p>-->
-    <h2>Device monitor and controller</h2>
-
-    <div>{{timestamp}}</div>
-
-
-    <table border="1">
+    <h2>CYRIC2020a Pair transfer on 120Sn </h2>
+    Machine time: 2020/10/07 10:00 -- 2020/10/10 10:00
+    <table border="0" width="600">
       <tbody>
-	<tr><td> RUN </td> <td> {{daqconfig.runinfo.runname + runnum(daqconfig.runinfo.runnumber)}} </td></tr>
-	<tr><td> Status </td> <td> {{daqconfig.runinfo.runstatus}} </td></tr>
-	<tr><td> Start </td> <td> {{daqconfig.runinfo.startdate}}</td></tr>
-	<tr><td> Stop </td> <td> {{daqconfig.runinfo.stopdate}}</td></tr>
-	<tr><td> Header </td>
-	  <td v-if="daqconfig.runinfo.runstatus == 'START' || daqconfig.runinfo.runstatus == 'NSSTA'"> {{daqconfig.runinfo.header}}</td>
-	  <td v-else>>
-	    <input type="text" v-model='$data.input.header' placeholder="please input header"/>
-	    <button v-on:click="nosaveStart()">Non-save Start</button>
-	    <button v-on:click="startRun()" v-bind:disabled="$data.input.header.length">Start</button>
-	  </td>>
+	<tr><td colspan="4" style="text-align:right">Logging date: {{timestamp}}</td></tr>
+	<tr>
+	  <td class="headding-view"> RUN </td>
+	  <td width="200"> {{daqconfig.runinfo.runname}}{{runnum(daqconfig.runinfo.runnumber)}} </td>
+	  <td class="headding-view"> Status </td>
+	  <td width="200" v-bind:class="clStatus"> {{daqconfig.runinfo.runstatus}} </td>
 	</tr>
 	<tr>
-	  <td> Ender </td>
-	  <td  v-if="daqconfig.runinfo.runstatus == 'IDLE'"> {{daqconfig.runinfo.ender}}</td>
-	  <td v-else>
-	    <input type="text" v-model="$data.input['ender']" placeholder="please input ender"/>
+	  <td class="headding-view"> Start </td>
+	  <td> {{daqconfig.runinfo.startdate}}</td>
+	  <td class="headding-view"> Stop </td>
+	  <td> {{daqconfig.runinfo.stopdate}}</td>
+	</tr>
+	<tr>
+	  <td class="headding-view"> Header </td>
+	  <td colspan="3" v-if="daqconfig.runinfo.runstatus == 'START' || daqconfig.runinfo.runstatus == 'NSSTA'"> {{daqconfig.runinfo.header}}</td>
+	  <td colspan="3" v-else>
+	    <input type="text" class="text-input" v-model="$data.input['header']" placeholder="please input header"/>
+	    <button v-on:click="nosaveStart()">Non-save Start</button>
+	    <button v-on:click="startRun()" v-bind:disabled="$data.input['header'].length == 0">Start</button>
+	  </td>
+	</tr>
+	<tr>
+	  <td class="headding-view"> Ender </td>
+	  <td colspan="3" v-if="daqconfig.runinfo.runstatus == 'IDLE'"> {{daqconfig.runinfo.ender}}</td>
+	  <td colspan="3" v-else>
+	    <input type="text" class="text-input" v-model="$data.input['ender']" placeholder="please input ender"/>
 	    <button v-on:click="stopRun()" v-bind:disabled="$data.input.ender.length == 0">Run Stop</button>
 	  </td>
 	</tr>
-	<tr><td> Events </td> <td> {{daqconfig.eventbuiltnumber}}</td></tr>
+	<tr><td class="headding-view"> Events </td> <td colspan="3" class="digit-view"> {{daqconfig.eventbuiltnumber}}</td></tr>
       </tbody>
     </table>
     <!--
@@ -62,19 +69,21 @@
     
     <h3>Silicon high voltage</h3>
     <div>{{timestamp}}</div>
-    <table border="1">
+    <table border="0">
         <thead>
-            <th>ch</th><th>input</th><th>preset</th><th>vol</th><th>cur</th><th>changed</th>
+          <th width=50>ch</th><th>input</th><th>preset</th><th>vol</th><th>cur</th>
+	  <!-- <th>changed</th> -->
         </thead>
         <tbody>
           <tr v-for="(item,index) in monitor">
-	    <td >{{index}}</td>
+	    <td class="headding-view">{{index}}</td>
 	    <td><input type="text" v-model="$data.preset[index]"
-		   v-bind:class="{changed : isChanged[index] }"    ></input></td>
-	    <td>{{item['RUP']}}</td>
-	    <td v-bind:class="{changed : $data.monitor[index].isRamping }">{{item['RU']}}</td>
-	    <td>{{item['RI']}}</td>
-	    <td>{{isChanged[index]}}</td>
+		       class="digit-view digit-input"
+		   v-bind:class="{changed : isChanged[index] }" ></input>V</td>
+	    <td class="digit-view">{{item['RUP']}} V</td>
+	    <td class="digit-view" v-bind:class="{changed : $data.monitor[index].isRamping }">{{item['RU']}} uA</td>
+	    <td class="digit-view">{{item['RI']}} uA</td>
+<!--	    <td>{{isChanged[index]}}</td>-->
 	  </tr>
         </tbody>
     </table>
@@ -86,15 +95,20 @@
     <!-- scaler data -->
     <h3>Scaler</h3>
     <div>{{timestamp}}</div>
-    <table border="1">
+    <table border="0">
       <thead>
-	<th>ch</th><th>name</th><th>val</th><th>rate(kHz)</th>
-	<th>ch</th><th>name</th><th>val</th><th>rate(kHz)</th></thead>
+	<th>ch</th><th>name</th><th>total</th><th>rate(kHz)</th>
+	<th>ch</th><th>name</th><th>total</th><th>rate(kHz)</th></thead>
       <tbody>
 	<tr v-for="(index) in getScrindex">
-	  <td>{{index}}</td><td>{{$data.scrname[index]}}</td><td>{{$data.scr[index]}}</td><td>{{$data.scrrate[index]}}</td>
-	  
-	  <td>{{index+10}}</td><td>{{$data.scrname[index+10]}}</td><td>{{$data.scr[index+10]}}</td><td>{{$data.scrrate[index+10]}}</td>
+	  <td class="headding-view">{{index}}</td>
+	  <td class="headding-view">{{$data.scrname[index]}}</td>
+	  <td class="digit-view">{{$data.scr[index]}}</td>
+	  <td class="digit-view">{{$data.scrrate[index]}}</td>
+	  <td class="headding-view">{{index+10}}</td>
+	  <td class="headding-view">{{$data.scrname[index+10]}}</td>
+	  <td class="digit-view">{{$data.scr[index+10]}}</td>
+	  <td class="digit-view">{{$data.scrrate[index+10]}}</td>
 	</tr>
       </tbody>
     </table>
@@ -106,181 +120,234 @@
         <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
 	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>        
         <script>
-            // Vue オブジェクト
-            var app = new Vue({
-                el: '#app',
-                data() {
-                    return {
-                        // object 形式でプロパティを記述していく
-			message: "hello vue",
-			timestamp: "Timestamp is being prepared",
-			monitor: [],
-			preset: [],
-			isChanged: [],
-			input: {"ender" : "" , "header" : ""},
-			rup: [],
-			scr: [],
-			scrrate: [],
-			daqconfig: {},
-			scrname: [
-			    "accepted", "requested", "NA","NA","Si0xSi1x",
-			    "Si0xSi1x~Pla","NA","NA","Si0","Si1x",
-			    "Si1x","Si2","Pla","NA","NA",
-			    "NA","Beam","NA","NA","Clock(10kHz)"
-			],
-			scrindex: [0,1],
-			itemList: [
-			    'huga',
-			    'hoge',
-			    'poyo'
-			],
-			obj: {
-			    name: 'Vue',
-			    id: 1,
-			    lang: 'JavaScript'
-			},
-			urlbase : 'http://192.168.253.152:5042',
-			runinfo_api : 'http://192.168.253.152:5044'
-                    };
-                },
-                // 算出プロパティ(キャッシュされる)
-                computed: {
-		    getScrindex: function () {
-			for (i = 0; i < 10; ++i) {
-			    this.scrindex[i] = i;
-			}
-			return this.scrindex;
-		    }
-                },
-                // 監視プロパティ
-                watch: {
+          // Vue オブジェクト
+          var app = new Vue({
+              el: '#app',
+              data() {
+                  return {
+                      // object 形式でプロパティを記述していく
+		      message: "hello vue",
+		      timestamp: "Timestamp is being prepared",
+		      monitor: [],
+		      preset: [],
+		      isChanged: [],
+		      input: {"ender" : "" , "header" : ""},
+		      rup: [],
+		      scr: [],
+		      scrrate: [],
+		      daqconfig: {},
+		      clStatus: "normal",
+		      scrname: [
+			  "accepted", "requested", "NA","NA","Si0xSi1x",
+			  "Si0xSi1x~Pla","NA","NA","Si0","Si1x",
+			  "Si1x","Si2","Pla","NA","NA",
+			  "NA","Beam","NA","NA","Clock(10kHz)"
+		      ],
+		      scrindex: [0,1],
+		      itemList: [
+			  'huga',
+			  'hoge',
+			  'poyo'
+		      ],
+		      obj: {
+			  name: 'Vue',
+			  id: 1,
+			  lang: 'JavaScript'
+		      },
+		      urlbase : 'http://192.168.253.152:5042',
+		      runinfo_api : 'http://192.168.253.152:5044'
+                  };
+              },
+              // 算出プロパティ(キャッシュされる)
+              computed: {
+		  getScrindex: function () {
+		      for (i = 0; i < 10; ++i) {
+			  this.scrindex[i] = i;
+		      }
+		      return this.scrindex;
+		  }
+              },
+              // 監視プロパティ
+              watch: {
 
-                },
-                // 関数(キャッシュされない、都度評価される)
-                methods: {
-		    setv: function() {
-			// alert('button clicked');
-			setval = Math.abs(this.preset[0]);
-			for (i = 1; i< 4; ++i) {
-			    setval += ":"+Math.abs(this.preset[i]);
-			}
-			url = this.urlbase + "/setv/" + setval;
-			axios.get(url);
-		    },
-		    stopRamping: function() {
-			url = this.urlbase + "/stopRamping";
-			axios.get(url);
-		    },
-		    // run controller
-		    stopRun: function() {
-			url = this.runinfo_api + "/control/stop/ender=" + this.input.ender;
-			axios.get(url);
-			this.input.ender = "";
-		    },
-		    startRun: function() {
-			url = this.runinfo_api + "/control/start/header=" + this.input.header;
-			axios.get(url)
-			    .then(response => {
-				
-			    });
-		    },
-		    nosaveStart: function() {
-			url = this.runinfo_api + "/control/nssta";
-			axios.get(url);
-		    },
-		    
-		    runnum: function (num) {
-			return ("0000"+num).slice(-4);
-		    }
-                },
+              },
+              // 関数(キャッシュされない、都度評価される)
+              methods: {
+		  setv: function() {
+		      // alert('button clicked');
+		      setval = Math.abs(this.preset[0]);
+		      for (i = 1; i< 4; ++i) {
+			  setval += ":"+Math.abs(this.preset[i]);
+		      }
+		      url = this.urlbase + "/setv/" + setval;
+		      axios.get(url);
+		  },
+		  stopRamping: function() {
+		      url = this.urlbase + "/stopRamping";
+		      axios.get(url);
+		  },
+		  // run controller
+		  stopRun: function() {
+		      url = this.runinfo_api + "/control/stop/ender=" + this.input.ender;
+		      axios.get(url);
+		      this.input.ender = "";
+		  },
+		  startRun: function() {
+		      url = this.runinfo_api + "/control/start/header=" + this.input.header;
+		      axios.get(url);
+		  },
+		  nosaveStart: function() {
+		      url = this.runinfo_api + "/control/nssta";
+		      axios.get(url);
+		  },
+		  
+		  runnum: function (num) {
+		      return ("0000"+num).slice(-4);
+		  }
+              },
 
-                // ライフサイクルフック ---------------------------------------------------
-                // https://jp.vuejs.org/v2/api/#beforeUpdate
-                beforeCreate() {
+              // ライフサイクルフック ---------------------------------------------------
+              // https://jp.vuejs.org/v2/api/#beforeUpdate
+              beforeCreate() {
 
-                },
-                created() {
+              },
+              created() {
 
-                },
-                mounted() {
-		    axios
-			.get('http://192.168.253.152:5042/monitor/json')
-			.then(response => {
-			    tmp = response.data;
-			    app.monitor = [];
-			    for (i = 0; i < 4; ++i) {
-				this.monitor.push({'RU': tmp['RU'][i],
-						  'RUP': tmp['RUP'][i],
-						   'RI': tmp['RI'][i],
-						  'isRamping' : tmp['isRamping'][i]});
-				this.preset.push(tmp['RUP'][i]);
-			    }
-			    
-			});
-		    // timer
-		    setInterval( function () {
-			now = new Date();
-			app.timestamp = now.getFullYear() + "/" + (now.getMonth() + 1) + "/" + now.getDate()
-			    + " " + now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds();
-		    }, 1000)
-		    // silicon 
-		    setInterval( function () {
-			axios
-			    .get('http://192.168.253.152:5042/monitor/json')
-			    .then(response => {
-				tmp = response.data;
-				app.monitor = [];
-				for (i = 0; i < 4; ++i) {
-				    app.monitor.push({'RU': tmp['RU'][i],
-						      'RUP': tmp['RUP'][i],
-						      'RI': tmp['RI'][i],
-						      'isRamping' : tmp['isRamping'][i]});
+              },
+              mounted() {
+		  axios
+		      .get('http://192.168.253.152:5042/monitor/json')
+		      .then(response => {
+			  tmp = response.data;
+			  app.monitor = [];
+			  for (i = 0; i < 4; ++i) {
+			      this.monitor.push({'RU': tmp['RU'][i],
+						 'RUP': tmp['RUP'][i],
+						 'RI': tmp['RI'][i],
+						 'isRamping' : tmp['isRamping'][i]});
+			      this.preset.push(tmp['RUP'][i]);
+			  }
+			  
+		      });
+		  // timer
+		  setInterval( function () {
+		      now = new Date();
+		      app.timestamp = now.getFullYear()
+			  + "/" + ("00" + (now.getMonth() + 1)).slice(-2)
+			  + "/" + ("00" + now.getDate()).slice(-2)
+			  + " " + ("00" + now.getHours()).slice(-2)
+			  + ":" + ("00" + now.getMinutes()).slice(-2)
+			  + ":" + ("00" + now.getSeconds()).slice(-2);
+		  }, 1000)
+		  // silicon 
+		  setInterval( function () {
+		      axios
+			  .get('http://192.168.253.152:5042/monitor/json')
+			  .then(response => {
+			      tmp = response.data;
+			      app.monitor = [];
+			      for (i = 0; i < 4; ++i) {
+				  app.monitor.push({'RU': tmp['RU'][i],
+						    'RUP': tmp['RUP'][i],
+						    'RI': tmp['RI'][i],
+						    'isRamping' : tmp['isRamping'][i]});
 
-				    app.isChanged[i] = (app.preset[i] != app.monitor[i]['RUP']);
-				
-				}
-			    });
-			axios.get('http://192.168.253.152:5043/monitor/gto_scaler.json')
-			    .then(response => {
-				scrold = JSON.parse(JSON.stringify(app.scr));
-				app.scr = JSON.parse(JSON.stringify(response.data["scr"]));
-				app.scrrate = Array(20);
-				timediff = app.scr[19] - scrold[19];
-				for (i = 0; i < 20; ++i) {
-				    app.scrrate[i] = Math.round((app.scr[i] - scrold[i])/timediff*1000)/100;
-				}
-				
-			    });
-		    },1000)
-		    setInterval (function () {
-			axios.get('http://192.168.253.152:5044/monitor/runinfo.json')
-			    .then(response => { app.daqconfig = response.data; });
-		    } ,1000);
-                },
-                beforeUpdate() {
+				  app.isChanged[i] = (app.preset[i] != app.monitor[i]['RUP']);
+				  
+			      }
+			  });
+		      axios.get('http://192.168.253.152:5043/monitor/gto_scaler.json')
+			  .then(response => {
+			      scrold = JSON.parse(JSON.stringify(app.scr));
+			      app.scr = JSON.parse(JSON.stringify(response.data["scr"]));
+			      app.scrrate = Array(20);
+			      timediff = app.scr[19] - scrold[19];
+			      for (i = 0; i < 20; ++i) {
+				  app.scrrate[i] = Math.round((app.scr[i] - scrold[i])/timediff*1000)/100;
+			      }
+			      
+			  });
+		  },1000)
+		  setInterval (function () {
+		      axios.get('http://192.168.253.152:5044/monitor/runinfo.json')
+			  .then(response => {
+			      app.daqconfig = response.data;
+			      status = app.daqconfig.runinfo.runstatus;
+			      if (status == 'START') { app.clStatus = "normal"; }
+			      if (status == 'IDLE') app.clStatus = "notify";
+			      if (status == 'NSSTA') app.clStatus = "warning";
+			  });
+		  } ,1000);
+              },
+              beforeUpdate() {
 
-                },
-                updated() {
+              },
+              updated() {
 
-                },
-                activated() {
+              },
+              activated() {
 
-                },
-                deactivated() {
+              },
+              deactivated() {
 
-                },
-                beforeDestroy() {
+              },
+              beforeDestroy() {
 
-                },
-                destroyed() {
+              },
+              destroyed() {
 
-                }
-                // ライフサイクルフック ---------------------------------------------------
-            });
+              }
+              // ライフサイクルフック ---------------------------------------------------
+          });
         </script>
 	<style module>
+	  td {
+	      padding: 1px;
+	      margin: 0px;
+	      border-bottom: solid 1px #dddddd;
+	  }
 	  .changed {
 	      background-color: #ffff00;	      
+	  }
+	  .warning {
+	      background-color: #aa0000;
+	      color: white;
+	      text-align: center
+	  }
+	  .normal {
+	      background-color: #8888bb;
+	      color: white;
+	      text-align: center;
+	  }
+	  .notify {
+	      background-color: #bbbb33;
+	      color: black;;
+	      text-align: center
+	  }
+	  .digit-view {
+	      width: 100px;
+	      text-align: right;
+	      padding: 5px;
+	      font-size: 11pt;
+	  }
+	  .digit-input {
+	      width: 90%;
+	      padding: 5px 5px;
+	      border-radius: 3px;
+	      border: 2px solid #ddd;
+	      box-sizing: border-box;
+	  }
+	  .text-input {
+	      width: 100%;
+	      padding: 5px 5px;
+	      border-radius: 3px;
+	      border: 2px solid #ddd;
+	      box-sizing: border-box;
+	  }
+	  .headding-view {
+	      width: 50px;
+	      text-align: center;
+	      font-weight: bold;;
 	  }
 	</style>
     </body>
