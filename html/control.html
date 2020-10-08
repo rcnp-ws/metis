@@ -6,7 +6,7 @@
     </head>
     <body>
         <div id="app">
-            <!-- このエリアにVue 形式の HTMLを記述していく(描画DOMエリア) -->
+          <!-- このエリアにVue 形式の HTMLを記述していく(描画DOMエリア) -->
 <!--	    
 	    <p>{{message}}</p>
     <p>Array のレンダリング</p>
@@ -16,7 +16,50 @@
 -->
     <!--    <p>>Object のレンダリング</p>-->
     <h2>Device monitor and controller</h2>
+
     <div>{{timestamp}}</div>
+
+
+    <table border="1">
+      <tbody>
+	<tr><td> RUN </td> <td> {{daqconfig.runinfo.runname + runnum(daqconfig.runinfo.runnumber)}} </td></tr>
+	<tr><td> Status </td> <td> {{daqconfig.runinfo.runstatus}} </td></tr>
+	<tr><td> Start </td> <td> {{daqconfig.runinfo.startdate}}</td></tr>
+	<tr><td> Stop </td> <td> {{daqconfig.runinfo.stopdate}}</td></tr>
+	<tr><td> Header </td>
+	  <td v-if="daqconfig.runinfo.runstatus == 'START' || daqconfig.runinfo.runstatus == 'NSSTA'"> {{daqconfig.runinfo.header}}</td>
+	  <td v-else>>
+	    <input type="text" v-model='$data.input.header' placeholder="please input header"/>
+	    <button v-on:click="nosaveStart()">Non-save Start</button>
+	    <button v-on:click="startRun()" v-bind:disabled="$data.input.header.length">Start</button>
+	  </td>>
+	</tr>
+	<tr>
+	  <td> Ender </td>
+	  <td  v-if="daqconfig.runinfo.runstatus == 'IDLE'"> {{daqconfig.runinfo.ender}}</td>
+	  <td v-else>
+	    <input type="text" v-model="$data.input['ender']" placeholder="please input ender"/>
+	    <button v-on:click="stopRun()" v-bind:disabled="$data.input.ender.length == 0">Run Stop</button>
+	  </td>
+	</tr>
+	<tr><td> Events </td> <td> {{daqconfig.eventbuiltnumber}}</td></tr>
+      </tbody>
+    </table>
+    <!--
+    <table border="1">
+      <tbody>
+	<tr><th>HDN</th><th>PATH</th><th>On/Off</th><th>Free</th>
+	<tr v-for="(item) in daqconfig.hdlist">
+	  <td>{{item.hdn}}</td>
+	  <td>{{item.path}}</td>
+	  <td>{{item.onoff}}</td>
+	  <td>{{item.free}}</td>
+	</tr>
+      </tbody>
+    </table>
+    -->
+
+    
     <h3>Silicon high voltage</h3>
     <div>{{timestamp}}</div>
     <table border="1">
@@ -74,9 +117,11 @@
 			monitor: [],
 			preset: [],
 			isChanged: [],
+			input: {"ender" : "" , "header" : ""},
 			rup: [],
 			scr: [],
 			scrrate: [],
+			daqconfig: {},
 			scrname: [
 			    "accepted", "requested", "NA","NA","Si0xSi1x",
 			    "Si0xSi1x~Pla","NA","NA","Si0","Si1x",
@@ -94,7 +139,8 @@
 			    id: 1,
 			    lang: 'JavaScript'
 			},
-			urlbase : 'http://192.168.253.152:5042'
+			urlbase : 'http://192.168.253.152:5042',
+			runinfo_api : 'http://192.168.253.152:5044'
                     };
                 },
                 // 算出プロパティ(キャッシュされる)
@@ -124,6 +170,27 @@
 		    stopRamping: function() {
 			url = this.urlbase + "/stopRamping";
 			axios.get(url);
+		    },
+		    // run controller
+		    stopRun: function() {
+			url = this.runinfo_api + "/control/stop/ender=" + this.input.ender;
+			axios.get(url);
+			this.input.ender = "";
+		    },
+		    startRun: function() {
+			url = this.runinfo_api + "/control/start/header=" + this.input.header;
+			axios.get(url)
+			    .then(response => {
+				
+			    });
+		    },
+		    nosaveStart: function() {
+			url = this.runinfo_api + "/control/nssta";
+			axios.get(url);
+		    },
+		    
+		    runnum: function (num) {
+			return ("0000"+num).slice(-4);
 		    }
                 },
 
@@ -165,16 +232,14 @@
 				app.monitor = [];
 				for (i = 0; i < 4; ++i) {
 				    app.monitor.push({'RU': tmp['RU'][i],
-						       'RUP': tmp['RUP'][i],
+						      'RUP': tmp['RUP'][i],
 						      'RI': tmp['RI'][i],
 						      'isRamping' : tmp['isRamping'][i]});
-				    app.isChanged[i] = (app.preset[i] != app.monitor[i]['RUP']);
-				}
-				
-			    });
-		    },1000)
 
-		    setInterval ( function() {
+				    app.isChanged[i] = (app.preset[i] != app.monitor[i]['RUP']);
+				
+				}
+			    });
 			axios.get('http://192.168.253.152:5043/monitor/gto_scaler.json')
 			    .then(response => {
 				scrold = JSON.parse(JSON.stringify(app.scr));
@@ -184,8 +249,13 @@
 				for (i = 0; i < 20; ++i) {
 				    app.scrrate[i] = Math.round((app.scr[i] - scrold[i])/timediff*1000)/100;
 				}
+				
 			    });
 		    },1000)
+		    setInterval (function () {
+			axios.get('http://192.168.253.152:5044/monitor/runinfo.json')
+			    .then(response => { app.daqconfig = response.data; });
+		    } ,1000);
                 },
                 beforeUpdate() {
 

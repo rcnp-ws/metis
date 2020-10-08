@@ -1,61 +1,24 @@
 # @filename gto_scaler.py
 # Create : 2020-10-07 16:03:39 JST (ota)
-# Last Modified : 2020-10-07 21:02:13 JST (ota)
+# Last Modified : 2020-10-08 01:58:16 JST (ota)
 
 import json
 import signal
 import time
 import datetime
-import socket
+from sock_com import sock_com
 
-class gto_scaler :
+class gto_scaler (sock_com) :
     def __init__(self) :
-        self.__port = 10001
-        self.__address = ""
-        self.__s = None
+        super().__init__()
+        self.port = 10001
         self.__GTO_SCR_SIZE = 24
-        self.__cache = {}
         self.__com = {
             "version": b"!!@@",
             "data"   : b"!!R0",
             "init"   : b"!!0I",
             "clear"  : b"!!0C"
         }
-
-    @property
-    def address(self) :
-        return self.__address
-    @address.setter
-    def address(self, address) :
-        self.__address = address
-
-    @property
-    def cache(self) :
-        return self.__cache
-    @cache.setter
-    def cache(self, cache) :
-        self.__cache = cache
-
-    def open(self) :
-        self.__s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.__s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.__s.connect((self.__address,self.__port))
-
-        
-    def close(self) :
-        self.__s.close()
-        time.sleep(0.001)
-        
-    def sendAndReceive(self,com) :
-        self.open()
-        self.__s.sendall(com)
-        ret = self.__s.recv(16384)
-        self.close()       
-        return ret
-    def send(self,com) :
-        self.open()
-        self.__s.sendall(com)
-        self.close()       
 
     def init(self) :
         self.send(self.__com["init"])
@@ -95,7 +58,7 @@ class gto_scaler :
 if __name__ == "__main__":
     scr = gto_scaler()
     scr.address = "192.168.253.151"
-    scr.clear()
+#    scr.clear()
     print(scr.data())
 
 

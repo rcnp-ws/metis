@@ -1,13 +1,13 @@
 # @filename storeDAta.py
 # Create : 2020-10-07 12:25:12 JST (ota)
-# Last Modified : 2020-10-07 15:07:05 JST (ota)
+# Last Modified : 2020-10-08 10:15:06 JST (ota)
 import sqlite3
 import os
 
 class dbstore (object) :
 
-   def __init__(self) :
-      self.__dbpath = ""
+   def __init__(self,dbpath) :
+      self.__dbpath = dbpath
       self.__connection = None
       self.__cursor = None
 
@@ -47,12 +47,11 @@ class dbstore (object) :
 
    @dbpath.setter
    def dbpath(self, path) :
-      os.makedirs(os.path.dirname(path),exist_ok = True)
+      None if not os.path.dirname(path) else os.makedirs(os.path.dirname(path),exist_ok = True)
       self.__dbpath = path
 
 if __name__ == "__main__" :
-   db = dbstore()
-   db.dbpath = "test.db"
+   db = dbstore("test.db")
    db.execute('create table persons (id integer primary key autoincrement, name string)')
    db.commit()
    
