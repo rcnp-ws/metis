@@ -4,8 +4,8 @@
       <meta charset="utf-8">
         <title>Vue Starter</title>
     </head>
-    <body>
-        <div id="app">
+    <body >
+        <div id="app" v-bind:class="clRuninfo">
           <!-- このエリアにVue 形式の HTMLを記述していく(描画DOMエリア) -->
 <!--	    
 	    <p>{{message}}</p>
@@ -45,8 +45,8 @@
 	  <td class="headding-view"> Ender </td>
 	  <td colspan="3" v-if="daqconfig.runinfo.runstatus == 'IDLE'"> {{daqconfig.runinfo.ender}}</td>
 	  <td colspan="3" v-else>
-	    <input type="text" class="text-input" v-model="$data.input['ender']" placeholder="please input ender"/>
-	    <button v-on:click="stopRun()" v-bind:disabled="$data.input.ender.length == 0">Run Stop</button>
+	    <input v-if="daqconfig.runinfo.runstatus == 'START' "type="text" class="text-input" v-model="$data.input['ender']" placeholder="please input ender"/>
+	    <button v-on:click="stopRun()" v-bind:disabled="$data.daqconfig.runinfo.runstatus == 'START' && $data.input.ender.length == 0">Run Stop</button>
 	  </td>
 	</tr>
 	<tr><td class="headding-view"> Events </td> <td colspan="3" class="digit-view"> {{daqconfig.eventbuiltnumber}}</td></tr>
@@ -137,6 +137,7 @@
 		      scrrate: [],
 		      daqconfig: {},
 		      clStatus: "normal",
+		      clRuninfo: "",
 		      scrname: [
 			  "accepted", "requested", "NA","NA","Si0xSi1x",
 			  "Si0xSi1x~Pla","NA","NA","Si0","Si1x",
@@ -188,7 +189,12 @@
 		  },
 		  // run controller
 		  stopRun: function() {
-		      url = this.runinfo_api + "/control/stop/ender=" + this.input.ender;
+		      url = "";
+		      if (this.daqconfig.runinfo.runstatus == 'NSSTA') {
+			  url = this.runinfo_api + "/control/stop/ender=NSSTA";
+		      } else  {
+			  url = this.runinfo_api + "/control/stop/ender=" + this.input.ender;
+		      }
 		      axios.get(url);
 		      this.input.ender = "";
 		  },
@@ -273,7 +279,19 @@
 			  .then(response => {
 			      app.daqconfig = response.data;
 			      status = app.daqconfig.runinfo.runstatus;
-			      if (status == 'START') { app.clStatus = "normal"; }
+			      if (status == 'START') {
+				  app.clStatus = "normal"
+				  if (app.scrrate[0] < 0.01 || app.scrrate[4] < 0.01) {
+				      if (app.clRuninfo == "normal") {
+					  app.clRuninfo = "warning";
+				      } else {
+					  app.clRuninfo = "normal";
+				      }
+				  } else {
+				      app.clStatus = "normal";
+				      app.clRuninfo = "";
+				  }
+			      }
 			      if (status == 'IDLE') app.clStatus = "notify";
 			      if (status == 'NSSTA') app.clStatus = "warning";
 			  });

@@ -1,6 +1,6 @@
 # @filename storeDAta.py
 # Create : 2020-10-07 15:44:32 JST (ota)
-# Last Modified : 2020-10-08 00:15:58 JST (ota)
+# Last Modified : 2020-10-09 01:54:22 JST (ota)
 
 import json
 import responder
@@ -31,8 +31,9 @@ def monitorWorker(mod) :
        time.sleep(1)
 
 def insertWorker(mod) :
-    db = json_dbstore()
-    db.dbpath = "/home/daq/cyric2020a/%s_gto_scaler.db" % datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    dbpath = "/home/daq/cyric2020a/%s_gto_scaler.db" % datetime.datetime.now().strftime('%Y%m%d%H%M%S')    
+    db = json_dbstore(dbpath)
+
     db.createTableIfNot()
     db.commit()
     while doMonitor.value == 1 :

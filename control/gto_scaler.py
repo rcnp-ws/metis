@@ -1,6 +1,6 @@
 # @filename gto_scaler.py
 # Create : 2020-10-07 16:03:39 JST (ota)
-# Last Modified : 2020-10-08 01:58:16 JST (ota)
+# Last Modified : 2020-10-09 01:53:32 JST (ota)
 
 import json
 import signal
@@ -51,7 +51,7 @@ class gto_scaler (sock_com) :
         retjson["scr"] = []
         for i in range(20) :
             retjson["scr"].append(values[i+1])
-        self.__cache = retjson
+        self.cache = retjson
         return retjson
             
 
