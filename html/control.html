@@ -155,8 +155,8 @@
 			  id: 1,
 			  lang: 'JavaScript'
 		      },
-		      urlbase : 'http://192.168.253.152:5042',
-		      runinfo_api : 'http://192.168.253.152:5044'
+		      urlbase : 'http://172.27.230.178:5042',
+		      runinfo_api : 'http://172.27.230.178:5044'
                   };
               },
               // 算出プロパティ(キャッシュされる)
@@ -221,21 +221,21 @@
 
               },
               mounted() {
-		  axios
-		      .get('http://192.168.253.152:5042/monitor/json')
-		      .then(response => {
-			  tmp = response.data;
-			  app.monitor = [];
-			  for (i = 0; i < 4; ++i) {
-			      this.monitor.push({'RU': tmp['RU'][i],
-						 'RUP': tmp['RUP'][i],
-						 'RI': tmp['RI'][i],
-						 'isRamping' : tmp['isRamping'][i]});
-			      this.preset.push(tmp['RUP'][i]);
-			  }
-			  
-		      });
-		  // timer
+//		  axios
+//		      .get('http://192.168.253.152:5042/monitor/json')
+//		      .then(response => {
+//			  tmp = response.data;
+//			  app.monitor = [];
+//			  for (i = 0; i < 4; ++i) {
+//			      this.monitor.push({'RU': tmp['RU'][i],
+//						 'RUP': tmp['RUP'][i],
+//						 'RI': tmp['RI'][i],
+//						 'isRamping' : tmp['isRamping'][i]});
+//			      this.preset.push(tmp['RUP'][i]);
+//			  }
+//			  
+//		      });
+//		  // timer
 		  setInterval( function () {
 		      now = new Date();
 		      app.timestamp = now.getFullYear()
@@ -246,36 +246,36 @@
 			  + ":" + ("00" + now.getSeconds()).slice(-2);
 		  }, 1000)
 		  // silicon 
-		  setInterval( function () {
-		      axios
-			  .get('http://192.168.253.152:5042/monitor/json')
-			  .then(response => {
-			      tmp = response.data;
-			      app.monitor = [];
-			      for (i = 0; i < 4; ++i) {
-				  app.monitor.push({'RU': tmp['RU'][i],
-						    'RUP': tmp['RUP'][i],
-						    'RI': tmp['RI'][i],
-						    'isRamping' : tmp['isRamping'][i]});
-
-				  app.isChanged[i] = (app.preset[i] != app.monitor[i]['RUP']);
-				  
-			      }
-			  });
-		      axios.get('http://192.168.253.152:5043/monitor/gto_scaler.json')
-			  .then(response => {
-			      scrold = JSON.parse(JSON.stringify(app.scr));
-			      app.scr = JSON.parse(JSON.stringify(response.data["scr"]));
-			      app.scrrate = Array(20);
-			      timediff = app.scr[19] - scrold[19];
-			      for (i = 0; i < 20; ++i) {
-				  app.scrrate[i] = Math.round((app.scr[i] - scrold[i])/timediff*1000)/100;
-			      }
-			      
-			  });
-		  },1000)
+//		  setInterval( function () {
+//		      axios
+//			  .get('http://192.168.253.152:5042/monitor/json')
+//			  .then(response => {
+//			      tmp = response.data;
+//			      app.monitor = [];
+//			      for (i = 0; i < 4; ++i) {
+//				  app.monitor.push({'RU': tmp['RU'][i],
+//						    'RUP': tmp['RUP'][i],
+//						    'RI': tmp['RI'][i],
+//						    'isRamping' : tmp['isRamping'][i]});
+//
+//				  app.isChanged[i] = (app.preset[i] != app.monitor[i]['RUP']);
+//				  
+//			      }
+//			  });
+//		      axios.get('http://192.168.253.152:5043/monitor/gto_scaler.json')
+//			  .then(response => {
+//			      scrold = JSON.parse(JSON.stringify(app.scr));
+//			      app.scr = JSON.parse(JSON.stringify(response.data["scr"]));
+//			      app.scrrate = Array(20);
+//			      timediff = app.scr[19] - scrold[19];
+//			      for (i = 0; i < 20; ++i) {
+//				  app.scrrate[i] = Math.round((app.scr[i] - scrold[i])/timediff*1000)/100;
+//			      }
+//			      
+//			  });
+//		  },1000)
 		  setInterval (function () {
-		      axios.get('http://192.168.253.152:5044/monitor/runinfo.json')
+		      axios.get('http://172.17.230.178:5044/monitor/runinfo.json')
 			  .then(response => {
 			      app.daqconfig = response.data;
 			      status = app.daqconfig.runinfo.runstatus;

@@ -1,6 +1,6 @@
 # @filename storeDAta.py
 # Create : 2020-10-07 15:44:32 JST (ota)
-# Last Modified : 2020-10-08 08:07:12 JST (ota)
+# Last Modified : 2020-10-25 09:45:56 JST (ota)
 
 import json
 import signal
@@ -31,7 +31,7 @@ class runinfo :
     def execute(self,cmd,arg="") :
         babicmdjson = "/usr/babirl/babicon/babicmdjson"
         host    = self.host
-        if hot host :
+        if not host :
             return
 
         try: 
