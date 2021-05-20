@@ -103,11 +103,11 @@ def nssta(req, resp) :
 from argparse import ArgumentParser
     
 if __name__ == "__main__":
-    info = runinfo("astd01")
-    dbpath = "/home/daq/cyric2020a/cyric2020a_runinfo.db"
+    info = runinfo("shd01")
+    dbpath = "/home/daq/db/ribf114_runinfo.db"
     t1 = threading.Thread(target=monitorWorker)
     t1.start()
 
-    api.run(address="192.168.253.152",port=5044)
+    api.run(address="localhost",port=5044)
     doMonitor.value = 0
     

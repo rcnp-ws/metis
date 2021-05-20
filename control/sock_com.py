@@ -11,6 +11,7 @@ class sock_com :
         self.__port = 0
         self.__address = ""
         self.__bufsize = 16384
+        self.__cache =  None
 
     @property
     def socket(self) :

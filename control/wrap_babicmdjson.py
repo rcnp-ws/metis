@@ -56,10 +56,10 @@ class runinfo :
 
 
     def execute(self,cmd,arg="") :
-#        print(babicmdjson,self.host,cmd,arg)
         ret = subprocess.run([babicmdjson, self.host, cmd, arg], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout;
         ret = ret.decode()
         ret = ret.replace('\n','')
-        self.cache[cmd] = json.loads(ret)
+        if ret != "" :
+            self.cache[cmd] = json.loads(ret) 
         time.sleep(0.005)
 
