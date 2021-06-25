@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <title>Vue Starter</title>
+  </head>
+  <body >
+    <div id="app">
+      <h2>June 2021 SHARAQ11 </h2>
+      
+      <div>{{timestamp}}</div>
+      <table>
+	<tbody>
+	  <tr>
+	    <th>timestamp</th>
+	    <th>run</th>
+	    <th>start</th>
+	    <th>stop</th>
+	    <th>header</th>
+	    <th>ender</th>
+	    <th>num of events</th>
+	  </tr>
+	  <tr v-for="(item) in runlist">
+	    <td>{{item.ts}}</td>
+	    <td>{{item.runinfo.runname}}{{item.runinfo.runnumber}}</td>
+	    <td>{{item.runinfo.startdate}}</td>
+	    <td>{{item.runinfo.stopdate}}</td>
+	    <td>{{item.runinfo.header}}</td>
+	    <td>{{item.runinfo.ender}}</td>
+	    <td>{{item.eventbuiltnumber}}</td>
+	  </tr>
+	</tbody>
+      </table>
+      <!-- scaler data -->
+    </div>
+    <!-- vue.js を読み込んでからVueオブジェクトを記載していく -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>        
+    <script>
+      // Vue オブジェクト
+      var app = new Vue({
+          el: '#app',
+          data() {
+              return {
+                  // object 形式でプロパティを記述していく
+		  runlist: [],
+		  timestamp: "",
+		  run_items: {
+		  }  
+	      };
+          },
+          // 算出プロパティ(キャッシュされる)
+          computed: {
+	      
+          },
+          // 監視プロパティ
+          watch: {
+	      
+          },
+          // 関数(キャッシュされない、都度評価される)
+          methods: {
+          },
+	  
+          // ライフサイクルフック ---------------------------------------------------
+          // https://jp.vuejs.org/v2/api/#beforeUpdate
+          beforeCreate() {
+	      
+          },
+          created() {
+	      
+          },
+          mounted() {
+	      setInterval( function () {
+		  now = new Date();
+		  app.timestamp = now.getFullYear()
+		      + "/" + ("00" + (now.getMonth() + 1)).slice(-2)
+		      + "/" + ("00" + now.getDate()).slice(-2)
+		      + " " + ("00" + now.getHours()).slice(-2)
+		      + ":" + ("00" + now.getMinutes()).slice(-2)
+		      + ":" + ("00" + now.getSeconds()).slice(-2);
+	      }, 1000);
+	      setInterval (function () {
+		  axios.get('/runlist/runlist.json')
+		      .then(response => {
+			  app.runlist = response.data;
+		      });
+	      } ,1000);
+          },
+          beforeUpdate() {
+	      
+          },
+          updated() {
+	      
+          },
+          activated() {
+	      
+          },
+          deactivated() {
+	      
+          },
+          beforeDestroy() {
+	      
+          },
+          destroyed() {
+	      
+          }
+          // ライフサイクルフック ---------------------------------------------------
+      });
+    </script>
+    <style module>
+      table {
+	  border-collapse: collapse;
+      }
+      td {
+	  padding: 2px;
+	  margin: 1px;
+	  border: solid 1px #aaaaaa;
+      }
+      .changed {
+	  background-color: #ffff00;	      
+      }
+      .warning {
+	  background-color: #aa0000;
+	  color: white;
+	  text-align: center
+      }
+      .normal {
+	  background-color: #8888bb;
+	  color: white;
+	  text-align: center;
+      }
+      .notify {
+	  background-color: #bbbb33;
+	  color: black;;
+	  text-align: center
+      }
+      .digit-view {
+	  width: 100px;
+	  text-align: right;
+	  padding: 5px;
+	      font-size: 11pt;
+	  }
+	  .digit-input {
+	      width: 90%;
+	      padding: 5px 5px;
+	      border-radius: 3px;
+	      border: 2px solid #ddd;
+	      box-sizing: border-box;
+	  }
+	  .text-input {
+	      width: 100%;
+	      padding: 5px 5px;
+	      border-radius: 3px;
+	      border: 2px solid #ddd;
+	      box-sizing: border-box;
+	  }
+	  .headding-view {
+	      width: 50px;
+	      text-align: center;
+	      font-weight: bold;;
+	  }
+	</style>
+    </body>
+</html>

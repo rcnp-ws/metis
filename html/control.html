@@ -1,99 +1,53 @@
 <!DOCTYPE html>
 <html lang="ja">
-    <head>
-      <meta charset="utf-8">
-        <title>Vue Starter</title>
-    </head>
-    <body >
-        <div id="app" v-bind:class="clRuninfo">
-          <!-- このエリアにVue 形式の HTMLを記述していく(描画DOMエリア) -->
-<!--	    
-	    <p>{{message}}</p>
-    <p>Array のレンダリング</p>
-    <ul>
-        <li v-for="(item, index) in itemList">{{index}}: {{item}}</li>
-    </ul>
--->
-    <!--    <p>>Object のレンダリング</p>-->
-    <h2>CYRIC2020a Pair transfer on 120Sn </h2>
-    Machine time: 2020/10/07 10:00 -- 2020/10/10 10:00
-    <table border="0" width="600">
-      <tbody>
-	<tr><td colspan="4" style="text-align:right">Logging date: {{timestamp}}</td></tr>
-	<tr>
-	  <td class="headding-view"> RUN </td>
-	  <td width="200"> {{daqconfig.runinfo.runname}}{{runnum(daqconfig.runinfo.runnumber)}} </td>
-	  <td class="headding-view"> Status </td>
-	  <td width="200" v-bind:class="clStatus"> {{daqconfig.runinfo.runstatus}} </td>
-	</tr>
-	<tr>
-	  <td class="headding-view"> Start </td>
-	  <td> {{daqconfig.runinfo.startdate}}</td>
-	  <td class="headding-view"> Stop </td>
-	  <td> {{daqconfig.runinfo.stopdate}}</td>
-	</tr>
-	<tr>
-	  <td class="headding-view"> Header </td>
-	  <td colspan="3" v-if="daqconfig.runinfo.runstatus == 'START' || daqconfig.runinfo.runstatus == 'NSSTA'"> {{daqconfig.runinfo.header}}</td>
-	  <td colspan="3" v-else>
-	    <input type="text" class="text-input" v-model="$data.input['header']" placeholder="please input header"/>
-	    <button v-on:click="nosaveStart()">Non-save Start</button>
-	    <button v-on:click="startRun()" v-bind:disabled="$data.input['header'].length == 0">Start</button>
-	  </td>
-	</tr>
-	<tr>
-	  <td class="headding-view"> Ender </td>
-	  <td colspan="3" v-if="daqconfig.runinfo.runstatus == 'IDLE'"> {{daqconfig.runinfo.ender}}</td>
-	  <td colspan="3" v-else>
-	    <input v-if="daqconfig.runinfo.runstatus == 'START' "type="text" class="text-input" v-model="$data.input['ender']" placeholder="please input ender"/>
-	    <button v-on:click="stopRun()" v-bind:disabled="$data.daqconfig.runinfo.runstatus == 'START' && $data.input.ender.length == 0">Run Stop</button>
-	  </td>
-	</tr>
-	<tr><td class="headding-view"> Events </td> <td colspan="3" class="digit-view"> {{daqconfig.eventbuiltnumber}}</td></tr>
-      </tbody>
-    </table>
-    <!--
-    <table border="1">
-      <tbody>
-	<tr><th>HDN</th><th>PATH</th><th>On/Off</th><th>Free</th>
-	<tr v-for="(item) in daqconfig.hdlist">
-	  <td>{{item.hdn}}</td>
-	  <td>{{item.path}}</td>
-	  <td>{{item.onoff}}</td>
-	  <td>{{item.free}}</td>
-	</tr>
-      </tbody>
-    </table>
-    -->
-
-    
-    <h3>Silicon high voltage</h3>
-    <div>{{timestamp}}</div>
-    <table border="0">
-        <thead>
-          <th width=50>ch</th><th>input</th><th>preset</th><th>vol</th><th>cur</th>
-	  <!-- <th>changed</th> -->
-        </thead>
-        <tbody>
-          <tr v-for="(item,index) in monitor">
-	    <td class="headding-view">{{index}}</td>
-	    <td><input type="text" v-model="$data.preset[index]"
-		       class="digit-view digit-input"
-		   v-bind:class="{changed : isChanged[index] }" ></input>V</td>
-	    <td class="digit-view">{{item['RUP']}} V</td>
-	    <td class="digit-view" v-bind:class="{changed : $data.monitor[index].isRamping }">{{item['RU']}} uA</td>
-	    <td class="digit-view">{{item['RI']}} uA</td>
-<!--	    <td>{{isChanged[index]}}</td>-->
+  <head>
+    <meta charset="utf-8">
+    <title>METIS</title>
+  </head>
+  <body>
+    <div id="app" v-bind:class="clRuninfo">
+      <h3> SHARAQ11</h3>
+      Machine time: 2021 06
+      <table border="0" width="600">
+	<tbody>
+	  
+          <tr><td colspan="4" style="text-align:right">Logging date: {{timestamp}}</td></tr>
+	  <tr>
+	    <td class="headding-view"> RUN </td>
+	    <td width="200"> {{daqconfig.runinfo.runname}}{{runnum(daqconfig.runinfo.runnumber)}} </td>
+	    <td class="headding-view"> Status </td>
+	    <td width="200" v-bind:class="clStatus"> {{daqconfig.runinfo.runstatus}} </td>
 	  </tr>
-        </tbody>
+	  <tr>
+	    <td class="headding-view"> Start </td>
+	    <td> {{daqconfig.runinfo.startdate}}</td>
+	    <td class="headding-view"> Stop </td>
+	    <td> {{daqconfig.runinfo.stopdate}}</td>
+	  </tr>
+	  <tr>
+	    <td class="headding-view"> Header </td>
+	    <td colspan="3" v-if="daqconfig.runinfo.runstatus == 'START' || daqconfig.runinfo.runstatus == 'NSSTA'"> {{daqconfig.runinfo.header}}</td>
+	    <td colspan="3" v-else>
+	      <input type="text" class="text-input" v-model="$data.input['header']" placeholder="please input header"/>
+	      <button v-on:click="nosaveStart()">Non-save Start</button>
+	      <button v-on:click="startRun()" v-bind:disabled="$data.input['header'].length == 0">Start</button>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td class="headding-view"> Ender </td>
+	    <td colspan="3" v-if="daqconfig.runinfo.runstatus == 'IDLE'"> {{daqconfig.runinfo.ender}}</td>
+	    <td colspan="3" v-else>
+	      <input v-if="daqconfig.runinfo.runstatus == 'START' "type="text" class="text-input" v-model="$data.input['ender']" placeholder="please input ender"/>
+	      <button v-on:click="stopRun()" v-bind:disabled="$data.daqconfig.runinfo.runstatus == 'START' && $data.input.ender.length == 0">Run Stop</button>
+	    </td>
+	  </tr>
+	  <tr><td class="headding-view"> Events </td> <td colspan="3" class="digit-view"> {{daqconfig.eventbuiltnumber}}</td></tr>
+	  
+	</tbody>
     </table>
-
-
-    <button v-on:click="setv()">Set Voltage</button>
-    <button v-on:click="stopRamping()">Stop Ranping</button>
-
+      
     <!-- scaler data -->
-    <h3>Scaler</h3>
+    <h4>Scaler</h4>
     <div>{{timestamp}}</div>
     <table border="0">
       <thead>
@@ -113,6 +67,33 @@
       </tbody>
     </table>
     <!-- scaler data -->
+    <div v-for="(url,fpname) in url_shpi">
+    <h4>{{fpname}} high voltage</h4>
+    <table border="0">
+        <thead>
+          <th width=50>ch</th><th>ON</th><th>OFF</th><th>INPUT</th><th>SET</th><th>VSET</th><th>VMON</th><th>ISET</th><th>IMON</th>
+	  <!-- <th>changed</th> -->
+        </thead>
+        <tbody>
+<!--          <tr v-for="(val,index) in shpi[fpname].VMON"> -->
+          <tr v-for="(ch,index) in usingChannel(fpname)">
+	    <td class="headding-view" v-bind:class="cl[fpname][ch]">{{ch}}</td>
+	    <td><button v-on:click="on(fpname,ch)">ON</button></td>
+	    <td><button v-on:click="off(fpname,ch)">OFF</button></td>
+	    <td><input type="text" v-model="$data.inv[fpname][ch]"
+		       class="digit-view digit-input"
+		       ></input>V</td>
+	    <td><button v-on:click="setv(fpname,ch)">Set</button></td>
+	    <td class="digit-view">{{shpi[fpname].VSET[ch]}} V</td>
+	    <td class="digit-view">{{shpi[fpname].VMON[ch]}} V</td>
+	    <td class="digit-view">{{shpi[fpname].ISET[ch]}} uA</td>
+	    <td class="digit-view">{{shpi[fpname].IMON[ch]}} uA</td>
+<!--	    <td>{{isChanged[index]}}</td>-->
+	  </tr>
+        </tbody>
+    </table>
+      </div>
+
 
         </div>
 
@@ -136,13 +117,16 @@
 		      scr: [],
 		      scrrate: [],
 		      daqconfig: {},
+		      cl: {},
+		      inv: {},
+		      shpi: {},
 		      clStatus: "normal",
 		      clRuninfo: "",
 		      scrname: [
-			  "accepted", "requested", "NA","NA","Si0xSi1x",
-			  "Si0xSi1x~Pla","NA","NA","Si0","Si1x",
-			  "Si1x","Si2","Pla","NA","NA",
-			  "NA","Beam","NA","NA","Clock(10kHz)"
+			  "accepted", "requested", "S2","Lumi","F3",
+			  "","ND1","ND2","","VETOU",
+			  "VETOD","LMU","LMD","ST","",
+			  "","","","","Clock(1kHz)"
 		      ],
 		      scrindex: [0,1],
 		      itemList: [
@@ -156,7 +140,10 @@
 			  lang: 'JavaScript'
 		      },
 		      urlbase : 'http://172.27.230.178:5042',
-		      runinfo_api : 'http://172.27.230.178:5044'
+		      runinfo_api : '/runinfo',
+		      url_shpi: { fp03:'/shpi03', fp07: '/shpi07', fp09: '/shpi09', fp12: '/shpi12', fps2: '/shpis2' },
+		      shpiuse: { fp03: [0,1], fp07: [0,1], fp09: [0,1], fp12: [0,3], fps2: [0,1,2,3]},
+//		      url_shpi: { fp03:'/shpi03', fp07: '/shpi07', fp09: '/shpi09', fp12: '/shpi12' },
                   };
               },
               // 算出プロパティ(キャッシュされる)
@@ -166,7 +153,7 @@
 			  this.scrindex[i] = i;
 		      }
 		      return this.scrindex;
-		  }
+		  },
               },
               // 監視プロパティ
               watch: {
@@ -174,6 +161,15 @@
               },
               // 関数(キャッシュされない、都度評価される)
               methods: {
+		  usingChannel: function (fpname) {
+		      return this.shpi[fpname].ch.filter( function (value, index) {
+			  for (let v of app.shpiuse[fpname]) {
+			      if (v == index) return true;
+			  }
+			  return false;
+		      }
+						     );
+		  },
 		  setv: function() {
 		      // alert('button clicked');
 		      setval = Math.abs(this.preset[0]);
@@ -209,16 +205,54 @@
 		  
 		  runnum: function (num) {
 		      return ("0000"+num).slice(-4);
-		  }
+		  },
+		  setv: function(fp,ch) {
+		      url= this.url_shpi[fp] + "/set/00/"+ch+"/VSET/"+this.inv[fp][ch];
+		      axios.get(url);
+		  },
+		  on: function(fp,ch) {
+		      url= this.url_shpi[fp] + "/on/00/"+ch;
+		      axios.get(url);
+		  },
+		  off: function(fp,ch) {
+		      url= this.url_shpi[fp] + "/off/00/"+ch;
+		      axios.get(url);
+		  },
+		  monitorN1470: function (fp) {
+		      axios.get(this.url_shpi[fp]+'/monitor/json')
+			  .then(response => {
+			      this.cl[fp] = [];
+			      this.shpi[fp] = response.data;
+			      this.shpi[fp].on = [0,0,0,0];
+			      this.shpi[fp].trip = [0,0,0,0];
+			      this.shpi[fp].ramp = [0,0,0,0];
+			      this.shpi[fp].ch = []
+			      for (i = 0; i < 4; ++i) {
+				  stat = this.shpi[fp].STAT[i];
+				  this.shpi[fp].ch[i] = i;
+				  this.shpi[fp].on[i]   = (stat & (1<<0));
+				  this.shpi[fp].trip[i] = (stat & (1<<7));
+				  this.shpi[fp].ramp[i] = (stat & (1<<1)) | (stat & (1<<2));
+				  if (this.shpi[fp].trip[i]) {
+				      this.cl[fp][i] = "warning";
+				  } else if (app.shpi[fp].ramp[i]) {
+				      this.cl[fp][i] = "notify";
+				  } else {
+				      this.cl[fp][i] = "normal";
+				  }
+			      }
+			      
+			  })
+		  },
+
               },
 
               // ライフサイクルフック ---------------------------------------------------
               // https://jp.vuejs.org/v2/api/#beforeUpdate
               beforeCreate() {
-
               },
               created() {
-
+		  
               },
               mounted() {
 //		  axios
@@ -236,6 +270,14 @@
 //			  
 //		      });
 //		  // timer
+		  for (var key in this.url_shpi) {
+		      this.inv[key] = [];
+		  }
+		  setInterval(function(){app.monitorN1470('fp03');},1000);
+		  setInterval(function(){app.monitorN1470('fp07');},1000);
+		  setInterval(function(){app.monitorN1470('fp09');},1000);
+		  setInterval(function(){app.monitorN1470('fp12');},1000);
+		  setInterval(function(){app.monitorN1470('fps2');},1000);
 		  setInterval( function () {
 		      now = new Date();
 		      app.timestamp = now.getFullYear()
@@ -244,9 +286,8 @@
 			  + " " + ("00" + now.getHours()).slice(-2)
 			  + ":" + ("00" + now.getMinutes()).slice(-2)
 			  + ":" + ("00" + now.getSeconds()).slice(-2);
-		  }, 1000)
-		  // silicon 
-//		  setInterval( function () {
+		  }, 1000);
+		  setInterval( function () {
 //		      axios
 //			  .get('http://192.168.253.152:5042/monitor/json')
 //			  .then(response => {
@@ -262,26 +303,26 @@
 //				  
 //			      }
 //			  });
-//		      axios.get('http://192.168.253.152:5043/monitor/gto_scaler.json')
-//			  .then(response => {
-//			      scrold = JSON.parse(JSON.stringify(app.scr));
-//			      app.scr = JSON.parse(JSON.stringify(response.data["scr"]));
-//			      app.scrrate = Array(20);
-//			      timediff = app.scr[19] - scrold[19];
-//			      for (i = 0; i < 20; ++i) {
-//				  app.scrrate[i] = Math.round((app.scr[i] - scrold[i])/timediff*1000)/100;
-//			      }
-//			      
-//			  });
-//		  },1000)
+		      axios.get('/shscrgto/monitor/gto_scaler.json')
+			  .then(response => {
+			      scrold = JSON.parse(JSON.stringify(app.scr));
+			      app.scr = JSON.parse(JSON.stringify(response.data["scr"]));
+			      app.scrrate = Array(20);
+			      timediff = app.scr[19] - scrold[19];
+			      for (i = 0; i < 20; ++i) {
+				  app.scrrate[i] = Math.round((app.scr[i] - scrold[i])/timediff*1000)/1000;
+			      }
+			      
+			  });
+		  },1000);
 		  setInterval (function () {
-		      axios.get('http://172.17.230.178:5044/monitor/runinfo.json')
+		      axios.get('/runinfo/monitor/runinfo.json')
 			  .then(response => {
 			      app.daqconfig = response.data;
 			      status = app.daqconfig.runinfo.runstatus;
 			      if (status == 'START') {
 				  app.clStatus = "normal"
-				  if (app.scrrate[0] < 0.01 || app.scrrate[4] < 0.01) {
+				  if (app.scrrate[0] < 0.01 || (app.scrrate[2] < 0.01)) {
 				      if (app.clRuninfo == "normal") {
 					  app.clRuninfo = "warning";
 				      } else {
@@ -292,10 +333,19 @@
 				      app.clRuninfo = "";
 				  }
 			      }
-			      if (status == 'IDLE') app.clStatus = "notify";
+				  if (status == 'IDLE') {
+				      app.clStatus = "notify";
+				      app.clRuninfo = "";
+				  }
 			      if (status == 'NSSTA') app.clStatus = "warning";
 			  });
 		  } ,1000);
+//		  setInterval (function () {
+//		      axios.get('http://10.32.2.1/shpi12/monitor/json')
+//			  .then(response => {
+//			      app.shpi12 = response.data;
+//			  });
+//		  });
               },
               beforeUpdate() {
 
@@ -315,7 +365,6 @@
               destroyed() {
 
               }
-              // ライフサイクルフック ---------------------------------------------------
           });
         </script>
 	<style module>
@@ -323,6 +372,7 @@
 	      padding: 1px;
 	      margin: 0px;
 	      border-bottom: solid 1px #dddddd;
+	      font-size: 11pt;
 	  }
 	  .changed {
 	      background-color: #ffff00;	      
@@ -350,14 +400,14 @@
 	  }
 	  .digit-input {
 	      width: 90%;
-	      padding: 5px 5px;
+	      padding: 3px 3px;
 	      border-radius: 3px;
 	      border: 2px solid #ddd;
 	      box-sizing: border-box;
 	  }
 	  .text-input {
 	      width: 100%;
-	      padding: 5px 5px;
+	      padding: 3px 3px;
 	      border-radius: 3px;
 	      border: 2px solid #ddd;
 	      box-sizing: border-box;
@@ -366,6 +416,7 @@
 	      width: 50px;
 	      text-align: center;
 	      font-weight: bold;;
+	      font-size: 11pt;
 	  }
 	</style>
     </body>
