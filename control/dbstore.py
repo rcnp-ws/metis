@@ -38,7 +38,7 @@ class dbstore (object) :
       return None if self.connection is None else self.connection.commit()
 
    def execute(self,sql) :
-      print("executing query %s" % sql)
+      # print("executing query %s" % sql)
       return None if self.cursor is None else self.cursor.execute(sql)
 
    @property

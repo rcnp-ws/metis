@@ -1,6 +1,6 @@
 # @filename runinfo_api.py
 # Create : 2020-10-07 15:44:32 JST (ota)
-# Last Modified : 2020-10-08 10:55:43 JST (ota)
+# Last Modified : 2020-10-25 12:49:47 JST (ota)
 import sys
 import subprocess
 import json
@@ -48,20 +48,55 @@ def monitor(req, resp) :
 @api.route("/control/stop/ender={ender}")
 def stop(req, resp, ender) :
     lock.acquire()
+    ret = info.getconfig(doUpdate=True)
+    if 'error' in ret :
+        resp.text = ret
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        lock.release()
+        return
+    state = "START"
+    if "runinfo" not in ret or "runstatus" not in ret["runinfo"] :
+        # error has occurred
+        # should tell ...?
+        return
+    if ret["runinfo"]["runstatus"] == "NSSTA" : 
+        state = "NSSTA"
     resp.text = json.dumps(info.getinfo("stop",ender,doUpdate=True))
     info.getconfig(doUpdate=True)
     info.getevtnumber(doUpdate=True)
     resp.headers["Access-Control-Allow-Origin"] = "*"
+    print(resp.text)
     if 'error' in resp.text :
+        lock.release()
+        return
+#    if 'error' in resp.text :
+#        print("return with error in response from babirl")
+#        lock.release()
+#        return
+    if state == "NSSTA" :
+        print("end for NSSTA")
         lock.release()
         return
     db = json_dbstore(dbpath)
     db.createTableIfNot()
     db.commit()
-    ret = info.getconfig()
+    count = 0
+    ret = info.getconfig(doUpdate=True)
+    if 'error' in ret :
+        resp.text = ret
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        lock.release()
+        return
+    while count < 3 and ret["runinfo"]["runstatus"] == "START" : 
+        time.sleep(1)
+        ret = info.getconfig(doUpdate=True)
+        count = count + 1
+    ret = info.getconfig(doUpdate=True)
     type = ret["runinfo"]["runname"] + str(ret["runinfo"]["runnumber"]).zfill(4)
     ret.update(info.getevtnumber())
+    print(ret)
     db.updateOrInsert(type,json.dumps(ret))
+    db.commit()
     db.close()
     lock.release()
     print('run stopped')
@@ -79,11 +114,21 @@ def start(req, resp, header) :
     db = json_dbstore(dbpath)
     db.createTableIfNot()
     db.commit()
+    count = 0
+    ret = info.getconfig(doUpdate=True)
+    if "runinfo" not in ret or "runstatus" not in ret["runinfo"] :
+        # error has occurred
+        # should tell ...?
+        return
+    while count < 3 and ret["runinfo"]["runstatus"] == "IDLE" : 
+        time.sleep(1)
+        ret = info.getconfig(doUpdate=True)
+        count = count + 1
     ret = info.getconfig()
     print(ret)
     type = ret["runinfo"]["runname"] + str(ret["runinfo"]["runnumber"]).zfill(4)
-    ret.update(info.getevtnumber())
     db.updateOrInsert(type,json.dumps(ret))
+    db.commit()
     db.close()
     lock.release()
     print('run started')
@@ -104,7 +149,7 @@ from argparse import ArgumentParser
     
 if __name__ == "__main__":
     info = runinfo("shd01")
-    dbpath = "/home/daq/db/ribf114_runinfo.db"
+    dbpath = "/home/daq/db/sharaq11_runinfo.db"
     t1 = threading.Thread(target=monitorWorker)
     t1.start()
 

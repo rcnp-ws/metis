@@ -1,6 +1,6 @@
 # @filename wrap_babicmdjson.py
 # Create : 2020-10-07 15:44:32 JST (ota)
-# Last Modified : 2020-10-08 09:45:33 JST (ota)
+# Last Modified : 2020-10-25 13:40:11 JST (ota)
 
 import json
 import signal
@@ -56,10 +56,15 @@ class runinfo :
 
 
     def execute(self,cmd,arg="") :
-        ret = subprocess.run([babicmdjson, self.host, cmd, arg], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout;
-        ret = ret.decode()
-        ret = ret.replace('\n','')
-        if ret != "" :
-            self.cache[cmd] = json.loads(ret) 
-        time.sleep(0.005)
+ #       print(babicmdjson,self.host,cmd,arg)
+        try :
+            ret = subprocess.run([babicmdjson, self.host, cmd, arg],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL).stdout;
+#            print(ret)
+            ret = ret.decode()
+            ret = ret.replace('\n','')
+            if ret != "" : 
+                self.cache[cmd] = json.loads(ret)
+            time.sleep(0.1)
+        except:
+            print("Cannot read but just ignore ..")
 

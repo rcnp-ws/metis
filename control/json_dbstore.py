@@ -1,8 +1,10 @@
 # @filename storeDAta.py
 # Create : 2020-10-07 12:25:12 JST (ota)
-# Last Modified : 2020-10-08 10:49:53 JST (ota)
+# Last Modified : 2020-10-25 19:06:24 JST (ota)
 from dbstore import dbstore 
 import time
+import datetime
+import json
 
 class json_dbstore (dbstore) :
    def __init__(self,dbpath) :
@@ -30,6 +32,19 @@ class json_dbstore (dbstore) :
       print("inserting %s" % sql)
       self.execute(sql)
       self.commit()
+
+   def selectAll(self) :
+      self.execute("select ts,data from %s order by ts desc" % self.table)
+      lines = self.cursor.fetchall()
+      ret = []
+      for line in lines :
+         ts = datetime.datetime.fromtimestamp(float(line[0]))
+         val = json.loads(line[1])
+         val["ts"] = ts.strftime("%Y-%m-%d %H:%M:%S")
+         ret.append(val)
+#      self.execute("select data from %s" % self.table)
+      return ret
+      
    def updateOrInsert (self, type, data) :
       ts  = time.time() # epoch or unix time
       self.execute("select * from %s where type = '%s'" % (self.table,type))

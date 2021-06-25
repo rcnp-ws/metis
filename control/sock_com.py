@@ -51,19 +51,29 @@ class sock_com :
 
     def open(self) :
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.settimeout(1);
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.connect((self.address,self.port))
+        try :
+            self.socket.connect((self.address,self.port))
+        except:
+            print("Cannot connect")
+            self.socket = None
         time.sleep(0.001)
 
         
     def close(self) :
+        if self.socket is None :
+            return
         self.socket.close()
         time.sleep(0.001)
         
     def sendAndReceive(self,com) :
         self.open()
+        if self.socket is None :
+            return None
         self.socket.sendall(com)
         ret = self.socket.recv(self.bufsize)
+        time.sleep(0.001)
         self.close()       
         return ret
     def send(self,com) :

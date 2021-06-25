@@ -30,8 +30,12 @@ class gto_scaler (sock_com) :
         return self.sendAndReceive(self.__com["version"])
     def data(self) :
         result = self.sendAndReceive(self.__com["data"])
+        if result is None :
+            return None
         values = []
         retjson = {}
+        if len(result) != self.__GTO_SCR_SIZE * 4:
+            return None
         for i in range(self.__GTO_SCR_SIZE) :
             values.append(int.from_bytes(
                 [result[4*i],

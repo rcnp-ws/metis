@@ -70,7 +70,7 @@ def clear_scaler(req, resp) :
 
 
 if __name__ == "__main__":
-    mod.address = "10.32.1.156"
+    mod.address = "10.32.2.81"
     signal.signal(signal.SIGINT,sigintHandler)    
     t1 = threading.Thread(target=monitorWorker, args=(mod,))
     t1.start()
