@@ -1,12 +1,12 @@
 # @file n14xx.py
 # @brief data holder via usb connection
-# Last Modified : 2020-11-20 06:52:21 JST (ota)
+# Last Modified : 2020-11-22 00:23:49 JST (ota)
 import time
 import os
 import re
 from ttyusb import ttyusb
 from typing import List, Dict
-import numpy as np
+import os
 
 cmdMonCh = (
    'VSET', 'VMIN', 'VMAX', 'VDEC', 'VMON', 'ISET', 'IMIN', 'IMAX', 'ISDEC', 'IMON',
@@ -32,124 +32,61 @@ cmdSetCh = (
 
 cmdSetMod = ('BDILKM', 'BDCLR')
 
-class n14xx(ttyusb):
+class n14xx:
    def __init__(self,dev):
       self.__delim = "\r\n"
-      super().__init__(dev,self.__delim)
+      self.__fmtMonCh = "$BD:{},CMD:MON,CH:{},PAR:{}"
+      self.__fmtSetCh = "$BD:{},CMD:SET,CH:{},PAR:{},VAL:{}"
+      self.__fmtOnCh = "$BD:{},CMD:SET,CH:{},PAR:ON"
+      self.__fmtOffCh = "$BD:{},CMD:SET,CH:{},PAR:OFF"
+      self.__regexpAllChOK = "#BD:{:02d},CMD:OK,VAL:([^;]+);([^;]+);([^;]+);([^;]+)"+self.__delim
+      self.__fd = os.open(dev,os.O_RDWR)
+      self.__cache = {}
 
-      # read all the status
-      for cmd in cmdMonCh:
-
-      time.sleep(0.1)
-
-   def monitorChannel(self,cmd,ch,cmd) : 
+   def __del__(self):
+      os.close(self.__fd)
       
+   def monch(self,bd,par):
+      ch = 4 # always read all the channels
+      cmd = self.__fmtMonCh.format(bd,ch,par) + self.__delim
+      os.write(self.__fd, cmd.encode())
+      ret = os.read(self.__fd, 1024).decode()
+      regexp = self.__regexpAllChOK.format(bd)
+      vals = re.match(regexp,ret)
+      if par not in self.__cache.keys():
+         self.__cache[par] = [0,0,0,0]
+      if vals :
+         for i in range(len(vals.groups())):
+            self.__cache[par][i] = vals.group(i+1)
+
+   def setch(self,bd,ch,par,val):
+      cmd = self.__fmtSetCh.format(bd,ch,par,val) + self.__delim
+      os.write(self.__fd, cmd.encode())
+      ret = os.read(self.__fd, 1024).decode()
+      print(ret)
+   def onch(self,bd,ch):
+      cmd = self.__fmtOnCh.format(bd,ch)+self.__delim
+      os.write(self.__fd, cmd.encode())
+      ret = os.read(self.__fd, 1024).decode()
+      print(cmd,ret)
+   def offch(self,bd,ch):
+      cmd = self.__fmtOffCh.format(bd,ch)+self.__delim
+      os.write(self.__fd, cmd.encode())
+      ret = os.read(self.__fd, 1024).decode()
+      print(cmd,ret)
       
-   def stopRamping (self) :
-      self._stopRamping = True
-      self._cache["isRamping"] = [False] * 4
 
-   def isRamping (self) :
-      return self._isRamping
-
-   def write(self,com):
-      os.write(self._fd,com)
-
-   def read(self):
-      return os.read(self._fd,1024)
-
-   def setF(self,com,ch,val):
-      self.write(b"%s %d %f\r" % (com, ch, val))
-
-   def get(self,com,ch):
-      self.write(b"%s %d\r" % (com, ch))
-      return self.decode(self.read())
-
+   def get(self,par):
+      return self.__cache[par]
+            
    def getChache(self):
-      return self._cache;
+      return self.__cache
+   
+if __name__ == "__main__":
+   mod = n14xx("/dev/ttyUSB0")
+   mod.setch(0,0,"VSET",10)
+   mod.monch(0,"VSET")
+   print(mod.get("VSET"))
+   mod.monch(0,"VMON")
+   print(mod.get("VMON"))
 
-   def RAMP(self, targets: Dict[int,float]):
-      if self._isRamping == True :
-         return 
-      self._isRamping = True
-      num = len(targets)
-      if num == 0 :
-         return
-      doneRamp = [0] * num
-      initVol = self.RU(4)
-      for key in initVol:
-         initVol[key] = abs(initVol[key])
-         chs = list(targets.keys())
-         vals = list(targets.values())
-         # calculate ramp step
-      next = time.perf_counter() + self._tstep
-      while (0 in doneRamp) :
-         if self._stopRamping :
-            self._stopRamping = False
-            break
-         self.RU(4)
-         self.RI(4)
-         self.RUP(4)
-         while time.perf_counter() < next :
-            time.sleep(self._tstep * 0.1)
-            next += self._tstep
-         for i in range(num) :
-            if doneRamp[i] == 1 :
-               self._cache["isRamping"][i] = False
-               continue
-            ch = chs[i]
-            target = vals[i]
-            setval = initVol[ch] + np.sign(target-initVol[ch]) * self._vstep
-            if abs(target - setval) < self._vstep * 0.9 :
-               self.SU(ch,target)
-               self.read();
-               doneRamp[i] = 1
-               continue
-            self._cache["isRamping"][i] = True
-            self.SU(ch,setval)
-            self.read();
-            initVol[ch] = setval
-      self._isRamping = False
-      self._cache["isRamping"] = [False] * 4
-
-
-   def SU(self,ch,val):
-      # values should be unit of 0.1 when set to MHV
-      self.setF(b"SU",ch,val * 10)
-
-   def SUL(self,ch,val):
-      # values should be unit of 0.1 when set to MHV
-      self.setF(b"SUL",ch,val * 10)
-
-   def SIL(self,ch,val):
-      # values should be unit of 0.1 when set to MHV
-      self.setF(b"SIL",ch,val * 10)
-        
-
-    
-   def RU(self,ch):
-      self._cache['RU'] = self.get(b"RU",ch)
-      return self._cache['RU']
-   def RUP(self,ch):
-      self._cache['RUP'] = self.get(b"RUP",ch)       
-      return self._cache['RUP']
-   def RUL(self,ch):
-      return self.get(b"RUL",ch)
-   def RI(self,ch):
-      self._cache['RI'] = self.get(b"RI",ch)
-      return self._cache['RI']
-   def RIL(self,ch):
-      return self.get(b"RIL",ch)
-
-
-   def decode(self,lines):
-      ret = {}
-      for line in lines.splitlines():
-         result = re.match(b".*?(\d): (\S+)",line)
-         if result and len(result.groups()) != 0 :
-            ret[int(result.group(1))] = float(result.group(2))
-      return ret    
-     
-        
-#    def setV(v):
-        
