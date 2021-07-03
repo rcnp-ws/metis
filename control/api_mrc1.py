@@ -1,7 +1,7 @@
 # @file api_mrc1.py
 # @brief api for mrc1
 # Created       : 2021-01-16 16:30:19 JST (ota)
-# Last Modified : 2021-01-19 20:28:40 JST (ota)
+# Last Modified : 2021-07-03 13:26:45 JST (ota)
 
 
 import json
@@ -12,7 +12,7 @@ import time
 import datetime
 import socket
 from multiprocessing import Value
-from mrc1_3 import MRC1
+from mrc1 import MRC1
 
 api = responder.API(
    title='Web Service',
