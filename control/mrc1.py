@@ -1,7 +1,7 @@
 # @file mrc1.py
 # @brief module for mrc1
 # Created       : 2021-01-19 16:22:21 JST (ota)
-# Last Modified : 2021-07-03 13:54:26 JST (ota)
+# Last Modified : 2021-07-03 14:19:34 JST (ota)
 
 
 import serial
@@ -64,6 +64,8 @@ class MRC1 :
         execLock.release()
 
     def stopPolling(self) :
+        for module in self.__modules :
+            self.push("OFF {} {}".format(module.__bus,module.__dev))
         self.__doPolling = False
 
     def execute (self) :
@@ -91,6 +93,9 @@ class MRC1 :
                 idc = int(result.group(2))
                 if idc in self.__types and callable(self.__types[idc]) :
                     self.__modules.append(self.__types[idc](bus,dev,idc,self))
+                    self.push("ON {} {}".format(bus,dev))
+
+        self.execute()
 
     def ramp (self, configs) :
         for module in self.__modules :
