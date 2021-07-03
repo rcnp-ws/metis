@@ -1,7 +1,7 @@
 # @file mrc1.py
 # @brief module for mrc1
 # Created       : 2021-01-19 16:22:21 JST (ota)
-# Last Modified : 2021-01-20 00:27:44 JST (ota)
+# Last Modified : 2021-07-03 13:54:26 JST (ota)
 
 
 import serial
@@ -63,7 +63,7 @@ class MRC1 :
             self.__cmds += cmd + "\r"
         execLock.release()
 
-    def stopPolling() :
+    def stopPolling(self) :
         self.__doPolling = False
 
     def execute (self) :
