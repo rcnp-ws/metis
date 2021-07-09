@@ -1,13 +1,14 @@
 # @file mrc1.py
 # @brief module for mrc1
 # Created       : 2021-01-19 16:22:21 JST (ota)
-# Last Modified : 2021-07-03 14:19:34 JST (ota)
+# Last Modified : 2021-07-03 17:40:51 JST (ota)
 
 
 import serial
 import time
 import re
 import threading
+import copy
 from collections import deque
 from collections import defaultdict
 
@@ -25,8 +26,8 @@ class MRC1 :
         self.__types = { 17 : mhv4, 27 : mhv4}
         self.__doPolling = True
 
-        self.push("X0")
-        self.push("P0")
+        self.push(["X0"])
+        self.push(["P0"])
         self.execute()
         self.resetLines()
 
@@ -35,6 +36,7 @@ class MRC1 :
 
         t = threading.Thread(target=self.pollingWorker)
         t.start()
+        
 
     def __del__ (self) :
         self.__doPolling = False
@@ -64,9 +66,9 @@ class MRC1 :
         execLock.release()
 
     def stopPolling(self) :
-        for module in self.__modules :
-            self.push("OFF {} {}".format(module.__bus,module.__dev))
         self.__doPolling = False
+        for module in self.__modules :
+            self.push(["OFF {} {}".format(module.bus,module.dev)])
 
     def execute (self) :
         execLock.acquire()
@@ -76,6 +78,7 @@ class MRC1 :
         lines = self.__tty.readlines()
         for line in lines :
             line = line.decode().lstrip().rstrip()
+#            print(line)
             if line == "" :
                 continue
             self.__lines.append(line)
@@ -93,9 +96,15 @@ class MRC1 :
                 idc = int(result.group(2))
                 if idc in self.__types and callable(self.__types[idc]) :
                     self.__modules.append(self.__types[idc](bus,dev,idc,self))
-                    self.push("ON {} {}".format(bus,dev))
 
+        for module in self.__modules :
+            self.push(["ON {} {}".format(module.bus,module.dev)])
+            self.push(["SE {} {} {} 1".format(module.bus,module.dev,4)])
+            self.push(["SE {} {} {} 1".format(module.bus,module.dev,5)])
+            self.push(["SE {} {} {} 1".format(module.bus,module.dev,6)])
+            self.push(["SE {} {} {} 1".format(module.bus,module.dev,7)])
         self.execute()
+#        print(self.lines)
 
     def ramp (self, configs) :
         for module in self.__modules :
@@ -105,7 +114,7 @@ class MRC1 :
         
     def pollingWorker (self) :
         while self.__doPolling :
-            print("monitoring and executing")
+#            print("monitoring and executing")
             for module in self.__modules :
                 module.monitor()
             self.execute()
@@ -122,50 +131,69 @@ class mhv4 :
         self.__isRamping = [False] * 4
         self.__rampTarget = [0] *4
         self.__tstep = 1
-        self.__vstep = 1
+        self.__vstep = 10
 
         self.monitor()
         mrc1.execute()
         self.parse(mrc1.lines,lineLock)
 
 
+    @property
+    def bus (self) :
+        return self.__bus
+    @property
+    def dev (self) :
+        return self.__dev
+
+
     def ramp (self, configs) :
         for config in configs.copy() :
+            addr = config['addr']
             if config['bus'] == self.__bus and config['dev'] == self.__dev :
-                if addr > 3 :
-                    configs.remote(config)
+                if addr > 3 : 
+                    configs.remove(config)
                     continue
                 if self.__isRamping[addr] :
                     self.__rampTarget[addr] = config['val']
-                    configs.remote(config)
+                    configs.remove(config)
                     continue
                 # start working and remove configuration
-                t = threading.Thread(target=self.rampWorker, args=(config))
+                t = threading.Thread(target=self.rampWorker, args=(config,))
                 t.start()
                 configs.remove(config)
         
-    def rampWorker (self, aConfig) :
-        bus  = aConfig['bus']
-        dev  = aConfig['dev']
-        addr = aConfig['addr']
-        self.__rampTarget[addr]  = aConfig['val']
+    def rampWorker (self, config) :
+        print(config)
+        addr = config['addr']
+        val = config['val']
+        bus = config['bus']
+        dev = config['dev']
+        self.__rampTarget[addr]  = val
         doneRamp = False
         next = time.perf_counter()
         self.__mrc1.updateCache(bus,dev,1000 + addr, True)
+        oldVolSet = 0
         while not doneRamp :
-            while time.pref_counter() < next :
-                time.sleep(self.__step * 0.1)
+            while time.perf_counter() < next :
+                time.sleep(self.__tstep * 0.1)
             next += self.__tstep
-            volTgt = abs(self.__rampTarget[addr])
-            volMon = abs(self.__mrc1.cache[bus][dev][addr+32])
+            volTgt = abs(float(self.__rampTarget[addr]))
+            volMon = abs(float(self.__mrc1.cache[bus][dev][addr+32]))
+            if abs(oldVolset - volMon) > self.__vstep * 0.2 :
+                next
             volSet = volMon
             diff = volTgt - volMon
-            if abs(diff) < self.__vstep * 0.9 :
+#            print(self.__rampTarget[addr])
+#            print(self.__mrc1.cache[bus][dev][addr+32])
+#            print(diff)
+            if abs(diff) < self.__vstep * 1.5 :
                 volSet = volTgt
                 doneRamp = True
             else : 
                 volSet += diff / abs(diff) * self.__vstep
-            self.__mrc1.push("SE {} {} {} {}".format(bus,dev,addr,volSet))
+            if abs(volSet - oldVolSet) > self.__vstep * 0.5:
+                self.__mrc1.push(["SE {} {} {} {}".format(bus,dev,addr,volSet)])
+                oldVolSet = volSet
         self.__isRamping[addr] = False
         self.__mrc1.updateCache(bus,dev,1000+addr,False)
             

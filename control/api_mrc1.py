@@ -1,7 +1,7 @@
 # @file api_mrc1.py
 # @brief api for mrc1
 # Created       : 2021-01-16 16:30:19 JST (ota)
-# Last Modified : 2021-07-03 13:26:45 JST (ota)
+# Last Modified : 2021-07-03 15:26:56 JST (ota)
 
 
 import json
@@ -11,6 +11,7 @@ import signal
 import time
 import datetime
 import socket
+
 from multiprocessing import Value
 from mrc1 import MRC1
 
@@ -42,10 +43,11 @@ def monitor (req, resp) :
     resp.headers["Access-Control-Allow-Origin"] = "*"
 
 @api.route("/api/mrc1/control/setv")
-async def mhv4_setv (req, resp) :
+async def mhv4_setv (req, resp):
     text = await req.media(format="json")
     print(text)
-    resp.text = "doing"
+    mod.ramp(text)
+    resp.media = "doing"
     resp.headers["Access-Control-Allow-Origin"] = "*"
     
 
