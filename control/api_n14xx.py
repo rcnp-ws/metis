@@ -8,11 +8,12 @@ from multiprocessing import Value
 #from json_dbstore import json_dbstore
 import datetime
 import socket
+import sys
 
-mod = n14xx("/dev/ttyUSB0")
+mod = None
 doMonitor = Value('i',1)
 lock = threading.Lock()
-lock_sql = threading.Lock()
+qlock_sql = threading.Lock()
 
 def sigintHandler ():
    doMonitor.value = 0
@@ -96,15 +97,24 @@ def test(req, resp) :
 
 
    
+# requires two arguments
+# 0 : usb tty device for n14xx
+# 1 : port to be served
 if __name__ == "__main__":
+   args = sys.argv
+   if len(args) != 3 :
+      print('Error: Requires two arguments /dev/ttyUSBx, and port number except for the filename')
+      print(args)
+      sys.exit()
+      
+   mod = n14xx(args[1])
+   port = int(args[2])
+   
    signal.signal(signal.SIGINT,sigintHandler)
    t1 = threading.Thread(target=monitorWorker, args=(mod,lock))
    t1.start()
-#
-#   t2 = threading.Thread(target=insertWorker, args=(mod,))
-#   t2.start()
 
-   api.run(address="192.168.10.109")
+   api.run(address="0.0.0.0", port = port)
    doMonitor.value = 0
 #    from wsgiref import simple_server
 #    httpd = simple_server.make_server("127.0.0.1", 8000, api)
