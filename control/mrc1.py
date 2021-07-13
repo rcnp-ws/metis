@@ -1,7 +1,7 @@
 # @file mrc1.py
 # @brief module for mrc1
 # Created       : 2021-01-19 16:22:21 JST (ota)
-# Last Modified : 2021-07-03 17:40:51 JST (ota)
+# Last Modified : 2021-07-12 16:36:57 JST (ota)
 
 
 import serial
@@ -96,7 +96,23 @@ class MRC1 :
                 idc = int(result.group(2))
                 if idc in self.__types and callable(self.__types[idc]) :
                     self.__modules.append(self.__types[idc](bus,dev,idc,self))
-
+        for module in self.__modules :
+            bus = module.bus
+            dev = module.dev
+            self.push(["SE {} {} {} {}".format(bus,dev,0,abs(self.cache[bus][dev][32]))])
+            self.push(["SE {} {} {} {}".format(bus,dev,1,abs(self.cache[bus][dev][33]))])
+            self.push(["SE {} {} {} {}".format(bus,dev,2,abs(self.cache[bus][dev][34]))])
+            self.push(["SE {} {} {} {}".format(bus,dev,3,abs(self.cache[bus][dev][35]))])
+            self.push(["SE {} {} {} {}".format(bus,dev,18,1500)])
+            self.push(["SE {} {} {} {}".format(bus,dev,19,1500)])
+            self.push(["SE {} {} {} {}".format(bus,dev,20,1500)])
+            self.push(["SE {} {} {} {}".format(bus,dev,21,1500)])
+            self.push(["SE {} {} {} {}".format(bus,dev,8,1500)])
+            self.push(["SE {} {} {} {}".format(bus,dev,9,1500)])
+            self.push(["SE {} {} {} {}".format(bus,dev,10,1500)])
+            self.push(["SE {} {} {} {}".format(bus,dev,11,1500)])
+        self.execute()
+            
         for module in self.__modules :
             self.push(["ON {} {}".format(module.bus,module.dev)])
             self.push(["SE {} {} {} 1".format(module.bus,module.dev,4)])
@@ -179,7 +195,7 @@ class mhv4 :
             next += self.__tstep
             volTgt = abs(float(self.__rampTarget[addr]))
             volMon = abs(float(self.__mrc1.cache[bus][dev][addr+32]))
-            if abs(oldVolset - volMon) > self.__vstep * 0.2 :
+            if abs(oldVolSet - volMon) > self.__vstep * 0.2 :
                 next
             volSet = volMon
             diff = volTgt - volMon
