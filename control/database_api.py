@@ -15,7 +15,7 @@ api = responder.API()
 
 @api.route("/runlist.json")
 def runlist(req, resp) :
-    dbpath = "/home/daq/db/sharaq11_runinfo.db"
+    dbpath = "/home/exp/db/h445_2_runinfo.db"
     db = json_dbstore(dbpath)
     ret = db.selectAll()
 #    print(json.loads(ret[0][0]))
@@ -24,9 +24,9 @@ def runlist(req, resp) :
     resp.headers["Access-Control-Allow-Origin"] = "*"    
 
 if __name__ == "__main__":
-    dbpath = "/home/quser/work/cosmos/2020Oct.db"
+#    dbpath = "/home/quser/work/cosmos/2020Oct.db"
 #    db = json_dbstore(dbpath)
 #    print( db.selectAll())
-    api.run(address="localhost",port=5046)
+    api.run(address="0.0.0.0",port=5046)
 
 

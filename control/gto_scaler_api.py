@@ -31,7 +31,7 @@ def monitorWorker(mod) :
        time.sleep(1)
 
 def insertWorker(mod) :
-    dbpath = "/home/daq/db/%s_gto_scaler.db" % datetime.datetime.now().strftime('%Y%m%d%H%M%S')    
+    dbpath = "/home/exp/db/%s_gto_scaler.db" % datetime.datetime.now().strftime('%Y%m%d%H%M%S')    
     db = json_dbstore(dbpath)
 
     db.createTableIfNot()
@@ -70,7 +70,7 @@ def clear_scaler(req, resp) :
 
 
 if __name__ == "__main__":
-    mod.address = "10.32.2.81"
+    mod.address = "10.32.8.92"
     signal.signal(signal.SIGINT,sigintHandler)    
     t1 = threading.Thread(target=monitorWorker, args=(mod,))
     t1.start()
@@ -78,6 +78,6 @@ if __name__ == "__main__":
     t2 = threading.Thread(target=insertWorker, args=(mod,))
     t2.start()
     
-    api.run(address="localhost",port=5043)
+    api.run(address="0.0.0.0",port=5043)
     doMonitor.value = 0
 

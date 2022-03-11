@@ -76,6 +76,7 @@ class sock_com :
         time.sleep(0.001)
         self.close()       
         return ret
+    
     def send(self,com) :
         self.open()
         self.socket.sendall(com)

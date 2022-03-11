@@ -148,11 +148,11 @@ def nssta(req, resp) :
 from argparse import ArgumentParser
     
 if __name__ == "__main__":
-    info = runinfo("shd01")
-    dbpath = "/home/daq/db/sharaq11_runinfo.db"
+    info = runinfo("sels-fs01")
+    dbpath = "/home/exp/db/h445_2_runinfo.db"
     t1 = threading.Thread(target=monitorWorker)
     t1.start()
 
-    api.run(address="localhost",port=5044)
+    api.run(address="0.0.0.0",port=5042)
     doMonitor.value = 0
     
