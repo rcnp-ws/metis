@@ -149,7 +149,7 @@ from argparse import ArgumentParser
     
 if __name__ == "__main__":
     info = runinfo("sels-fs01")
-    dbpath = "/home/exp/db/h445_2_runinfo.db"
+    dbpath = "/home/exp/db/h445_3_runinfo.db"
     t1 = threading.Thread(target=monitorWorker)
     t1.start()
 

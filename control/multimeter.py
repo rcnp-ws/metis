@@ -1,6 +1,6 @@
 # @filename multimeter.py
 # Create : 
-# Last Modified : 
+# Last Modified : 2022-09-22 21:46:34 JST (ota)
 
 import json
 import signal
@@ -29,6 +29,7 @@ class multimeter (sock_com) :
             "DC_vol_ch2"    : b"FUNC 'VOLT:DC',(@102) \r\n",
             "DC_vol_ch3"    : b"FUNC 'VOLT:DC',(@103) \r\n",
             "DC_vol_ch4"    : b"FUNC 'VOLT:DC',(@104) \r\n",
+            "DC_vol_ch5"    : b"FUNC 'VOLT:DC',(@105) \r\n",
             "DCV_rauto_off" : b"SENS:VOLT:DC:RANG:AUTO OFF\r\n",
             "DCV_rauto_on"  : b"SENS:VOLT:DC:RANG:AUTO ON\r\n",
             "DC_curr"       : b"SENS:FUNC 'CURR:DC' \r\n",
@@ -50,8 +51,9 @@ class multimeter (sock_com) :
             "chan2_close"   : b"ROUT:CLOS (@102)\r\n",
             "chan3_close"   : b"ROUT:CLOS (@103)\r\n",
             "chan4_close"   : b"ROUT:CLOS (@104)\r\n",
-            "chan_all_close": b"ROUT:CLOS (@102:104)\r\n",            
-            "scan_all"      : b"ROUT:SCAN (@101, 102, 103, 104)\r\n",
+            "chan5_close"   : b"ROUT:CLOS (@105)\r\n",
+            "chan_all_close": b"ROUT:CLOS (@102:105)\r\n",            
+            "scan_all"      : b"ROUT:SCAN (@101, 102, 103, 104,105)\r\n",
             "scan_start"    : b"ROUT:SCAN:LSEL INT\r\n",
             "scan_stop"     : b"ROUT:SCAN:LSEL NONE\r\n"            
         }
@@ -61,6 +63,14 @@ class multimeter (sock_com) :
 
     def buff_clear(self) :
         self.send(self.__com["buff_clear"])
+        
+    def is_num(self) :
+        try:
+            float(self)
+        except ValueError:
+            return False
+        else:
+            return True
         
     def read_ch1(self) :
         self.send(self.__com["cont_off"])
@@ -78,8 +88,15 @@ class multimeter (sock_com) :
         temp = self.sendAndReceive(self.__com["read"])
         if temp is None :
             return None
-        result.append(float(temp.decode()[0:15]))
-        time.sleep(0.5)                                                
+        temp2 = temp.decode()[0:15]
+ #       print(temp2)
+        try :
+            float(temp2)
+        except ValueError:
+            result.append(-10000)
+        else:
+            result.append(float(temp2))
+        time.sleep(0.5)
         return result
 
         
@@ -99,8 +116,15 @@ class multimeter (sock_com) :
         temp = self.sendAndReceive(self.__com["read"])
         if temp is None :
             return None
-        result.append(float(temp.decode()[0:15]))
-        time.sleep(0.5)                                                
+        temp2 = temp.decode()[0:15]
+ #       print(temp2)
+        try :
+            float(temp2)
+        except ValueError:
+            result.append(-10000)
+        else:
+            result.append(float(temp2))
+        time.sleep(0.5)
         return result
 
     def read_ch3(self) :
@@ -119,10 +143,17 @@ class multimeter (sock_com) :
         temp = self.sendAndReceive(self.__com["read"])
         if temp is None :
             return None
-        result.append(float(temp.decode()[0:15]))
-        time.sleep(0.5)                                                
+        temp2 = temp.decode()[0:15]
+#        print(temp2)
+        try :
+            float(temp2)
+        except ValueError:
+            result.append(-10000)
+        else:
+            result.append(float(temp2))
+        time.sleep(0.5)
         return result
-
+    
     def read_ch4(self) :
         self.send(self.__com["cont_off"])
         time.sleep(0.5)        
@@ -139,9 +170,45 @@ class multimeter (sock_com) :
         temp = self.sendAndReceive(self.__com["read"])
         if temp is None :
             return None
-        result.append(float(temp.decode()[0:15]))
+        temp2 = temp.decode()[0:15]
+#        print(temp2)
+        try :
+            float(temp2)
+        except ValueError:
+            result.append(-10000)
+        else:
+            result.append(float(temp2))
+        time.sleep(0.5)
+        return result
+    
+    def read_ch5(self) :
+        self.send(self.__com["cont_off"])
+        time.sleep(0.5)        
+        self.send(self.__com["ini_trig"])
+        time.sleep(0.5)
+        self.send(self.__com["chan_all_open"])        
+        time.sleep(0.5)                
+        self.send(self.__com["DC_vol"])
+        time.sleep(0.5)                
+        self.send(self.__com["chan5_close"])
+        time.sleep(0.5)                        
+        result = []
+        result.append(datetime.datetime.now().timestamp())
+        temp = self.sendAndReceive(self.__com["read"])
+        if temp is None :
+            return None
+#        print(temp.decode())
+        temp2 = temp.decode()[0:15]
+#        print(temp2)
+        try :
+            float(temp2)
+        except ValueError:
+            result.append(-10000)
+        else:
+            result.append(float(temp2))
         time.sleep(0.5)                                                
         return result
+
 
     def data(self) :
 
@@ -149,27 +216,31 @@ class multimeter (sock_com) :
         data_ch2 = self.read_ch2()
         data_ch3 = self.read_ch3()
         data_ch4 = self.read_ch4()        
+        data_ch5 = self.read_ch5()        
 
-        datetimes = [data_ch1[0], data_ch2[0], data_ch3[0], data_ch4[0]]        
+        datetimes = [data_ch1[0], data_ch2[0], data_ch3[0], data_ch4[0], data_ch5[0]]        
         values = []
         values.append(data_ch1[1])
         values.append(data_ch2[1])
         values.append(data_ch3[1])
         values.append(data_ch4[1])        
+        values.append(data_ch5[1])        
 
         calcs = []        
         calcs.append(-245.88 + 2.35979 * values[0] + 0.000990554 * values[0]*values[0])
         calcs.append(50.0 * (values[1]-3.0))
         calcs.append(50.0 * (values[2]-3.0))
         calcs.append(20.0 * values[3])
-
-        types = ["pt100_cat", "gauge_catout", "gauge_catin", "gauge_srppac"]
-        units = ["Ohm","V","V","V"]
-        calcunits = ["C","kPa","kPa","torr"]
+#        calcs.append(25.0 * (values[4]-1))
+        calcs.append(0.4+25.4 * (values[4]-1.0757))
+    
+        types = ["pt100_cat", "gauge_catout", "gauge_catin", "gauge_srppac", "gauge_mwdc"]
+        units = ["Ohm","V","V","V","V"]
+        calcunits = ["C","kPa","kPa","torr","kPa"]
         
         retjson = {}
         retjson["log"] = []
-        for i in range(4):
+        for i in range(5):
             retjson["log"].append({"datetime" : datetimes[i], "type" : types[i], "value" : values[i], "unit" : units[i], "calc" : calcs[i], "calcunit" : calcunits[i]})
 
         self.cache = retjson

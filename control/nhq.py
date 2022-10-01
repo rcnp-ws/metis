@@ -119,7 +119,8 @@ class nhq:
 #      return self.__cache
    
 if __name__ == "__main__":
-   mod = [nhq("/dev/ttyUSB0"), nhq("/dev/ttyUSB1"), nhq("/dev/ttyUSB2")]
+#   mod = [nhq("/dev/ttyUSB0"), nhq("/dev/ttyUSB1"), nhq("/dev/ttyUSB2")]
+   mod = [nhq("/dev/ttyUSB0"), nhq("/dev/ttyUSB1"), nhq("/dev/ttyUSB2"), nhq("/dev/ttyUSB3"), nhq("/dev/ttyUSB4"), nhq("/dev/ttyUSB5")]
    for i in range(len(mod)):
       print(mod[i].exec("#"))
       mod[i].exec("V1=50")

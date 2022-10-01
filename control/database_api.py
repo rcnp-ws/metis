@@ -15,7 +15,7 @@ api = responder.API()
 
 @api.route("/runlist.json")
 def runlist(req, resp) :
-    dbpath = "/home/exp/db/h445_2_runinfo.db"
+    dbpath = "/home/exp/db/h445_3_runinfo.db"
     db = json_dbstore(dbpath)
     ret = db.selectAll()
 #    print(json.loads(ret[0][0]))
