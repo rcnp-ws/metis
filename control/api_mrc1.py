@@ -3,7 +3,7 @@
 # Created       : 2021-01-16 16:30:19 JST (ota)
 # Last Modified : 2021-07-03 15:26:56 JST (ota)
 
-
+import sys
 import json
 import responder
 import threading
@@ -45,7 +45,7 @@ def monitor (req, resp) :
 @api.route("/api/mrc1/control/setv")
 async def mhv4_setv (req, resp):
     text = await req.media(format="json")
-    print(text)
+    print("api" + str(text))
     mod.ramp(text)
     resp.media = "doing"
     resp.headers["Access-Control-Allow-Origin"] = "*"
@@ -59,8 +59,9 @@ def monitorWorker(mod, lock) :
         lock.release()
 
 if __name__ == "__main__" :
+    args = sys.argv
     doMonitor.value = 1
-    mod = MRC1("/dev/ttyUSB0")
-    api.run(address = "0.0.0.0")
+    mod = MRC1(args[1])
+    api.run(address = "0.0.0.0", port=5040)
     mod.stopPolling()
     doMonitor.value = 0

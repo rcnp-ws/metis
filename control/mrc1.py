@@ -32,7 +32,7 @@ class MRC1 :
         self.resetLines()
 
         self.initModules(0)
-        self.initModules(1)
+#        self.initModules(1)
 
         t = threading.Thread(target=self.pollingWorker)
         t.start()
@@ -81,10 +81,14 @@ class MRC1 :
 #            print(line)
             if line == "" :
                 continue
-            self.__lines.append(line)
+            if line == "ERR:ADDR" :
+                pass
+            else :
+                self.__lines.append(line)
         execLock.release()
         
     def initModules (self,bus) :
+        print(bus)
         self.push(["SC {}".format(bus)])
         self.execute()
         print(self.lines)
@@ -99,6 +103,31 @@ class MRC1 :
         for module in self.__modules :
             bus = module.bus
             dev = module.dev
+            self.push(["RE {} {} {}".format(bus,dev,32)])
+            self.push(["RE {} {} {}".format(bus,dev,33)])
+            self.push(["RE {} {} {}".format(bus,dev,34)])
+            self.push(["RE {} {} {}".format(bus,dev,35)])
+            self.execute()
+            while len(self.lines) != 0  :
+                line = self.lines.popleft()
+                result = re.match("(\w+) (\d+) (\d+) (\d+) (\S+)",line)
+                if not result or len(result.groups()) == 0:
+                    continue
+                cmd = result.group(1)
+                if cmd == "RE" :
+                    bus = int(result.group(2))
+                    dev = int(result.group(3))
+                    addr = int(result.group(4))
+                    val = int(result.group(5))
+                    self.updateCache(bus,dev,addr,val)
+        for module in self.__modules :
+            bus = module.bus
+            print("{} {}".format(bus,module.bus))
+            dev = module.dev
+            print(abs(self.cache[bus][dev][32]))
+            print(abs(self.cache[bus][dev][33]))
+            print(abs(self.cache[bus][dev][34]))
+            print(abs(self.cache[bus][dev][35]))
             self.push(["SE {} {} {} {}".format(bus,dev,0,abs(self.cache[bus][dev][32]))])
             self.push(["SE {} {} {} {}".format(bus,dev,1,abs(self.cache[bus][dev][33]))])
             self.push(["SE {} {} {} {}".format(bus,dev,2,abs(self.cache[bus][dev][34]))])
@@ -107,14 +136,29 @@ class MRC1 :
             self.push(["SE {} {} {} {}".format(bus,dev,19,1500)])
             self.push(["SE {} {} {} {}".format(bus,dev,20,1500)])
             self.push(["SE {} {} {} {}".format(bus,dev,21,1500)])
-            self.push(["SE {} {} {} {}".format(bus,dev,8,1500)])
-            self.push(["SE {} {} {} {}".format(bus,dev,9,1500)])
-            self.push(["SE {} {} {} {}".format(bus,dev,10,1500)])
-            self.push(["SE {} {} {} {}".format(bus,dev,11,1500)])
+            self.push(["SE {} {} {} {}".format(bus,dev,8,5000)])
+            self.push(["SE {} {} {} {}".format(bus,dev,9,5000)])
+            self.push(["SE {} {} {} {}".format(bus,dev,10,5000)])
+            self.push(["SE {} {} {} {}".format(bus,dev,11,5000)])
         self.execute()
+
+        for module in self.__modules :
+            bus = module.bus
+            dev = module.dev
+            self.push(["RE {} {} {}".format(bus,dev,0)])
+            self.push(["RE {} {} {}".format(bus,dev,1)])
+            self.push(["RE {} {} {}".format(bus,dev,2)])
+            self.push(["RE {} {} {}".format(bus,dev,3)])
+        self.execute()
+        print(self.lines)
+
             
         for module in self.__modules :
             self.push(["ON {} {}".format(module.bus,module.dev)])
+            self.push(["SE {} {} {} 0".format(module.bus,module.dev,14)])
+            self.push(["SE {} {} {} 0".format(module.bus,module.dev,15)])
+            self.push(["SE {} {} {} 0".format(module.bus,module.dev,16)])
+            self.push(["SE {} {} {} 0".format(module.bus,module.dev,17)])
             self.push(["SE {} {} {} 1".format(module.bus,module.dev,4)])
             self.push(["SE {} {} {} 1".format(module.bus,module.dev,5)])
             self.push(["SE {} {} {} 1".format(module.bus,module.dev,6)])
@@ -147,7 +191,7 @@ class mhv4 :
         self.__isRamping = [False] * 4
         self.__rampTarget = [0] *4
         self.__tstep = 1
-        self.__vstep = 10
+        self.__vstep = 20
 
         self.monitor()
         mrc1.execute()
@@ -165,7 +209,8 @@ class mhv4 :
     def ramp (self, configs) :
         for config in configs.copy() :
             addr = config['addr']
-            if config['bus'] == self.__bus and config['dev'] == self.__dev :
+            prefix = "ramp[{}][{}]".format(self.__bus,self.__dev)
+            if int(config['bus']) == self.__bus and int(config['dev']) == self.__dev :
                 if addr > 3 : 
                     configs.remove(config)
                     continue
@@ -179,43 +224,46 @@ class mhv4 :
                 configs.remove(config)
         
     def rampWorker (self, config) :
-        print(config)
-        addr = config['addr']
-        val = config['val']
-        bus = config['bus']
-        dev = config['dev']
+        addr = int(config['addr'])
+        val  = float(config['val'])
+        bus  = int(config['bus'])
+        dev  = int(config['dev'])
         self.__rampTarget[addr]  = val
+        print(val)
         doneRamp = False
         next = time.perf_counter()
         self.__mrc1.updateCache(bus,dev,1000 + addr, True)
         oldVolSet = 0
+        isFirst = True
         while not doneRamp :
             while time.perf_counter() < next :
                 time.sleep(self.__tstep * 0.1)
             next += self.__tstep
             volTgt = abs(float(self.__rampTarget[addr]))
             volMon = abs(float(self.__mrc1.cache[bus][dev][addr+32]))
-            if abs(oldVolSet - volMon) > self.__vstep * 0.2 :
-                next
+
+#            if isFirst or abs(oldVolSet - volMon) > self.__vstep * 0.2 :
+#                isFirst = False
+#                oldVolset = volMon
+#                next += self.__tstep
+#                continue
             volSet = volMon
             diff = volTgt - volMon
-#            print(self.__rampTarget[addr])
-#            print(self.__mrc1.cache[bus][dev][addr+32])
-#            print(diff)
             if abs(diff) < self.__vstep * 1.5 :
                 volSet = volTgt
                 doneRamp = True
             else : 
                 volSet += diff / abs(diff) * self.__vstep
-            if abs(volSet - oldVolSet) > self.__vstep * 0.5:
-                self.__mrc1.push(["SE {} {} {} {}".format(bus,dev,addr,volSet)])
-                oldVolSet = volSet
+#            if abs(volSet - oldVolSet) > 0.:
+                
+            self.__mrc1.push(["SE {} {} {} {}".format(bus,dev,addr,volSet)])
+            oldVolSet = volSet
         self.__isRamping[addr] = False
         self.__mrc1.updateCache(bus,dev,1000+addr,False)
             
 
     def monitor (self) :
-        addrs = [0, 1, 2, 3, 32, 33, 34, 35, 36, 37, 38, 39, 50, 51, 52, 53]
+        addrs = [0, 1, 2, 3, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 50, 51, 52, 53]
         cmds = []
         for addr in addrs :
             cmds.append("RE {} {} {}".format(self.__bus,self.__dev,addr))
@@ -228,15 +276,18 @@ class mhv4 :
             if not result or len(result.groups()) == 0:
                 continue
             cmd = result.group(1)
-            bus = int(result.group(2))
-            dev = int(result.group(3))
-            addr = int(result.group(4))
-            val = int(result.group(5))
-            if bus != self.__bus or dev != self.__dev :
-                # doesn't care of different module
-                continue
-            self.__mrc1.updateCache(bus,dev,addr,val)
+            if cmd == "RE" :
+                bus = int(result.group(2))
+                dev = int(result.group(3))
+                addr = int(result.group(4))
+                val = int(result.group(5))
+                if bus != self.__bus or dev != self.__dev :
+                    # doesn't care of different module
+                    continue
+#                print("{} {} {} {}".format(bus,dev,addr,val))
+                self.__mrc1.updateCache(bus,dev,addr,val)
             lines.remove(line)
+#        print(self.__mrc1.cache)
         lock.release()
 
 

@@ -72,7 +72,12 @@ class sock_com :
         if self.socket is None :
             return None
         self.socket.sendall(com)
-        ret = self.socket.recv(self.bufsize)
+#        ret = self.socket.recv(self.bufsize)
+        time.sleep(0.1)
+        ret = self.socket.recv(1024)
+#        ret += self.socket.recv(1024)
+#        ret += self.socket.recv(1024)
+#        ret += self.socket.recv(1024)
         time.sleep(0.001)
         self.close()       
         return ret
