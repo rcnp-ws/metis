@@ -1,6 +1,6 @@
 [submodule "metis_vue"]
 	path = metis_vue
-	url = git@github.com:rcnp-ws/metis_vue.git
+	url = https://github.com/rcnp-ws/metis_vue.git
 [submodule "metis_fastapi"]
 	path = metis_fastapi
-	url = git@github.com:rcnp-ws/metis_fastapi.git
+	url = https://github.com/rcnp-ws/metis_fastapi.git
