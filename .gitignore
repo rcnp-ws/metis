@@ -6,3 +6,25 @@
 \#*
 \.\#*
 Pipfile
+
+
+# 環境変数ファイル（機密情報）
+.env
+.env.local
+
+# Docker関連の一時ファイルやボリュームデータ
+.docker/
+docker-data/
+*.pid
+
+# MAC OSの一時ファイル
+.DS_Store
+
+# docsディレクトリ (vitepress のお薦め設定を参考にする)
+docs/.vitepress/dist
+docs/.vitepress/cache
+docs/node_modules
+
+# base fixture builds
+__tests__/base/fixture/.vitepress/dist-*
+
