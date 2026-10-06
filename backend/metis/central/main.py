@@ -29,6 +29,8 @@ from metis.contracts.registration import (
     AgentRegisteredPayload,
 )
 
+from metis.contracts.monitoring import MonitorPublish, MonitorSample
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Metis Central")
@@ -52,6 +54,7 @@ class AgentConnection:
             str,
             asyncio.Future[OperationResponse],
         ] = {}
+        self.latest_monitors: dict[str, MonitorSample] = {}        
 
     def disconnected(self) -> None:
         for future in self.pending.values():
@@ -154,7 +157,24 @@ async def agent_connection(websocket: WebSocket) -> None:
 
             message_type = header.get("type")
 
-            if message_type == "operation_accepted":
+            if message_type == "monitor_publish":
+                publication = MonitorPublish.model_validate(message)
+                sample = publication.payload
+                    
+                if sample.device_id != agent_id:
+                    raise ValueError(
+                        "Monitor message has a different device_id"
+                    )
+
+                if sample.monitor not in connection.registration.monitors:
+                    raise ValueError(
+                        "Monitor is not registered"
+                    )
+
+                connection.latest_monitors[sample.monitor] = sample
+                continue
+
+            elif message_type == "operation_accepted":
                 response = OperationAccepted.model_validate(message)
 
             elif message_type == "operation_rejected":
@@ -299,3 +319,36 @@ async def request_operation(
         )
 
     return response.model_dump(mode="json")
+
+
+@app.get(
+    "/agents/{agent_id}/monitors/{monitor}",
+    response_model=MonitorSample,
+)
+async def get_monitor(
+    agent_id: str,
+    monitor: str,
+) -> MonitorSample:
+    connection = connections.get(agent_id)
+
+    if connection is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Agent is not connected",
+        )
+
+    if monitor not in connection.registration.monitors:
+        raise HTTPException(
+            status_code=404,
+            detail="Unknown monitor",
+        )
+
+    sample = connection.latest_monitors.get(monitor)
+
+    if sample is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Monitor value has not arrived yet",
+        )
+
+    return sample

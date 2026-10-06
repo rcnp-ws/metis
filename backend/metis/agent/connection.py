@@ -24,6 +24,16 @@ from metis.contracts.registration import (
 
 from metis.agent.generic import GenericAgent
 
+from collections.abc import Awaitable, Callable
+
+from metis.contracts.monitoring import (
+    MonitorPublish,
+    MonitorPublishHeader,
+    MonitorSample,
+)
+
+from websockets.exceptions import ConnectionClosed
+
 logger = logging.getLogger(__name__)
 
 
@@ -133,13 +143,11 @@ async def receive_operation(
     # コミット結果が不明な可能性があるため接続側へ伝える。
     return accepted
 
-
 async def connect_to_central(
     agent: GenericAgent,
     url: str,
-    retry_interval: float = 3.0,
+        retry_interval: float = 3.0,
 ) -> None:
-    """Centralへ登録し、操作要求を受信する。"""
     while True:
         try:
             async with connect(url) as websocket:
@@ -172,30 +180,41 @@ async def connect_to_central(
                     agent.agent_id,
                 )
 
-                async for raw in websocket:
-                    message = json.loads(raw)
+                send_lock = asyncio.Lock()
 
-                    if not isinstance(message, dict):
-                        raise ValueError("Message must be an object")
-
-                    header = message.get("header")
-
-                    if not isinstance(header, dict):
-                        raise ValueError("Message header is required")
-
-                    if header.get("type") != "operation_request":
-                        raise ValueError(
-                            f"Unsupported message type: "
-                            f"{header.get('type')}"
+                async def send(message: BaseModel) -> None:
+                    async with send_lock:
+                        await websocket.send(
+                            message.model_dump_json(),
                         )
 
-                    response = await receive_operation(
-                        agent,
-                        message,
+                receiver = asyncio.create_task(
+                    receive_requests(agent, websocket, send),
+                )
+                publisher = asyncio.create_task(
+                    publish_monitors(agent, send),
+                )
+
+                tasks = {receiver, publisher}
+
+                try:
+                    # 切断や監視取得エラーでどちらかが終了したら、
+                    # もう一方も停止し、この接続を終了する。
+                    done, _ = await asyncio.wait(
+                        tasks,
+                        return_when=asyncio.FIRST_COMPLETED,
                     )
 
-                    await websocket.send(
-                        response.model_dump_json(),
+                    for task in done:
+                        task.result()
+
+                finally:
+                    for task in tasks:
+                        task.cancel()
+
+                    await asyncio.gather(
+                        *tasks,
+                        return_exceptions=True,
                     )
 
         except asyncio.CancelledError:
@@ -206,6 +225,26 @@ async def connect_to_central(
                 "Operation acceptance unconfirmed; "
                 "closing Central connection"
             )
+        except ConnectionClosed as exc:
+            if exc.rcvd is not None and exc.rcvd.code == 1012:
+                logger.info(
+                    "Central stopped; reconnecting: %s",
+                    agent.agent_id,
+                )
+            else:
+                logger.warning(
+                    "Central connection closed: %s",
+                    exc,
+                )
+        
+        except OSError as exc:
+            logger.warning("Central unavailable; retrying: %s", exc)                
+
+        except Exception:
+            logger.exception(
+                "Central connection failed: %s",
+                agent.agent_id,
+            )
 
         except Exception:
             logger.exception(
@@ -214,3 +253,64 @@ async def connect_to_central(
             )
 
         await asyncio.sleep(retry_interval)
+
+
+async def publish_monitors(
+    agent: GenericAgent,
+    send: Callable[[BaseModel], Awaitable[None]],
+    interval: float = 1.0,
+) -> None:
+    """接続直後と、値が変化したときに監視値を送る。"""
+    previous: dict[str, dict[str, Any]] = {}
+    monitor_names = list(agent.describe()["monitors"])
+
+    while True:
+        for name in monitor_names:
+            value = await agent.read_monitor(name)
+            acquired_at = datetime.now(timezone.utc)
+            data = value.model_dump(mode="json")
+
+            if name in previous and previous[name] == data:
+                continue
+
+            message = MonitorPublish(
+                header=MonitorPublishHeader(
+                    sent_at=datetime.now(timezone.utc),
+                ),
+                payload=MonitorSample(
+                    device_id=agent.agent_id,
+                    monitor=name,
+                    acquired_at=acquired_at,
+                    value=data,
+                ),
+            )
+
+            await send(message)
+            previous[name] = data
+
+        await asyncio.sleep(interval)
+
+
+async def receive_requests(
+    agent: GenericAgent,
+    websocket: Any,
+    send: Callable[[BaseModel], Awaitable[None]],
+) -> None:
+    async for raw in websocket:
+        message = json.loads(raw)
+
+        if not isinstance(message, dict):
+            raise ValueError("Message must be an object")
+
+        header = message.get("header")
+
+        if not isinstance(header, dict):
+            raise ValueError("Message header is required")
+
+        if header.get("type") != "operation_request":
+            raise ValueError(
+                f"Unsupported message type: {header.get('type')}"
+            )
+
+        response = await receive_operation(agent, message)
+        await send(response)                
