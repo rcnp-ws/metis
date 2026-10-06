@@ -1,57 +1,77 @@
 # backend/src/metis/contracts/control.py
 
-from typing import Any, Literal
+from typing import Any, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
+
+from metis.contracts.base import ContractModel
+from metis.contracts.header import TrackableHeader
 
 
-class ControlModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+PayloadT = TypeVar("PayloadT", bound=BaseModel)
 
 
-class RejectionReason(ControlModel):
-    """拒否・失敗の理由。"""
+class OperationRequestHeader(TrackableHeader):
+    """CentralからAgentへ送る操作要求のヘッダー。"""
+
+    type: Literal["operation_request"] = "operation_request"
+
+    device_id: str = Field(min_length=1)
+    operation: str = Field(min_length=1)
+
+    user_id: str = Field(
+        min_length=1,
+        description="Centralが認証結果から確定したユーザー",
+    )
+    ui_id: str = Field(
+        min_length=1,
+        description="要求元のブラウザー画面の識別子",
+    )
+    workflow_id: str | None = Field(
+        default=None,
+        min_length=1,
+        description="複数Agentの処理を束ねる識別子",
+    )
+
+
+class OperationRequest(ContractModel, Generic[PayloadT]):
+    """機器固有のペイロード型を指定して使用する操作要求。"""
+
+    header: OperationRequestHeader
+    payload: PayloadT
+
+
+class OperationAcceptedHeader(TrackableHeader):
+    type: Literal["operation_accepted"] = "operation_accepted"
+
+
+class EmptyPayload(ContractModel):
+    """項目を持たないペイロード。"""
+
+    pass
+
+
+class OperationAccepted(ContractModel):
+    """Agentの永続受付が完了した通知。実行成功とは区別する。"""
+
+    header: OperationAcceptedHeader
+    payload: EmptyPayload = Field(default_factory=EmptyPayload)
+
+
+class OperationRejectedHeader(TrackableHeader):
+    type: Literal["operation_rejected"] = "operation_rejected"
+
+
+class RejectionReason(ContractModel):
+    """受付前の拒否理由。"""
 
     code: str = Field(min_length=1)
     message: str
     details: dict[str, Any] = Field(default_factory=dict)
 
 
-class OperationRequest(ControlModel):
-    """central から agent に送る操作要求。"""
+class OperationRejected(ContractModel):
+    """Agentが要求を受け付けなかった通知。"""
 
-    type: Literal["operation_request"] = "operation_request"
-    request_id: str = Field(min_length=1)
-    operation: str = Field(min_length=1)
-    payload: dict[str, Any] = Field(default_factory=dict)
-
-
-class OperationAccepted(ControlModel):
-    """agent が操作を受け付けた通知。実行完了ではない。"""
-
-    type: Literal["operation_accepted"] = "operation_accepted"
-    request_id: str = Field(min_length=1)
-
-
-class OperationRejected(ControlModel):
-    """操作を実行せず、受付を拒否した通知。"""
-
-    type: Literal["operation_rejected"] = "operation_rejected"
-    request_id: str = Field(min_length=1)
-    reason: RejectionReason
-
-
-class OperationSucceeded(ControlModel):
-    """操作が正常に完了した通知。"""
-
-    type: Literal["operation_succeeded"] = "operation_succeeded"
-    request_id: str = Field(min_length=1)
-    result: dict[str, Any]
-
-
-class OperationFailed(ControlModel):
-    """受け付けた操作の実行が失敗した通知。"""
-
-    type: Literal["operation_failed"] = "operation_failed"
-    request_id: str = Field(min_length=1)
-    reason: RejectionReason
+    header: OperationRejectedHeader
+    payload: RejectionReason

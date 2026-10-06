@@ -1,35 +1,38 @@
 # backend/src/metis/contracts/monitoring.py
 
+from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
-from metis.contracts.control import RejectionReason
+from pydantic import Field
+
+from metis.contracts.base import ContractModel
 
 
-class MonitoringModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+class MonitorSample(ContractModel):
+    """ある機器の監視値を取得した結果。"""
+
+    device_id: str = Field(
+        min_length=1,
+        description="監視対象の機器",
+    )
+    monitor: str = Field(
+        min_length=1,
+        description="Agentに登録された監視名",
+    )
+    acquired_at: datetime = Field(
+        description="この監視値を取得した時刻",
+    )
+    value: dict[str, Any] = Field(
+        description="機器固有モデルで検証した監視値",
+    )
 
 
-class MonitorRequest(MonitoringModel):
-    """central から agent に送る監視値取得要求。"""
+class MonitorPublish(ContractModel):
+    """AgentからCentralへ送る監視値。"""
 
-    type: Literal["monitor_request"] = "monitor_request"
-    request_id: str = Field(min_length=1)
-    monitor: str = Field(min_length=1)
+    type: Literal["monitor_publish"] = "monitor_publish"
 
-
-class MonitorResult(MonitoringModel):
-    """agent が返す現在の監視値。"""
-
-    type: Literal["monitor_result"] = "monitor_result"
-    request_id: str = Field(min_length=1)
-    monitor: str = Field(min_length=1)
-    state: dict[str, Any]
-
-
-class MonitorFailed(MonitoringModel):
-    """監視値を取得できなかった場合の応答。"""
-
-    type: Literal["monitor_failed"] = "monitor_failed"
-    request_id: str = Field(min_length=1)
-    reason: RejectionReason
+    sent_at: datetime = Field(
+        description="メッセージの送信開始直前の時刻",
+    )
+    payload: MonitorSample

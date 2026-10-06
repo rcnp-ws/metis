@@ -1,99 +1,130 @@
-# backend/src/metis/central/api/agents.py
+# backend/src/metis/agent/generic.py
 
-import asyncio
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
+from typing import Any
 
-from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
-from metis.central.connections.registry import AgentAlreadyConnectedError, AgentRegistry
-from metis.contracts.registration import (
-    AgentDescription,
-    RegisterAgentAccepted,
-    RegisterAgentRequest,
-)
-from pydantic import ValidationError
+from pydantic import BaseModel
 
-router = APIRouter(prefix="/agents", tags=["agents"])
+from metis.contracts.control import OperationRequest
 
 
-@router.get("", response_model=list[AgentDescription])
-async def list_agents(request: Request) -> list[AgentDescription]:
-    """接続中の agent 一覧を取得する。"""
-    registry: AgentRegistry = request.app.state.agent_registry
-    return await registry.list_agents()
+@dataclass
+class Operation:
+    """操作の定義。"""
+    request_model: type[BaseModel]
+    handler: Callable[[Any], Awaitable[Any]]
 
 
-@router.websocket("/connect")
-async def connect_agent(websocket: WebSocket) -> None:
-    """agent の登録を受け付け、切断まで接続を保持する。"""
-    registry: AgentRegistry = websocket.app.state.agent_registry
+@dataclass
+class Monitor:
+    """モニターの定義。"""
+    value_model: type[BaseModel]
+    reader: Callable[[], Awaitable[BaseModel]]
 
-    await websocket.accept()
 
-    registered_agent_id: str | None = None
+class GenericAgent:
+    
+    def __init__(
+        self,
+        *,
+        agent_id: str,
+        device_type: str,
+        on_start: Callable[[], Awaitable[None]],
+        on_stop: Callable[[], Awaitable[None]],
+    ) -> None:
+        self.agent_id = agent_id
+        self.device_type = device_type
 
-    try:
-        # 接続後、最初のメッセージとして登録情報を受け取る。
-        try:
-            raw = await asyncio.wait_for(
-                websocket.receive_text(),
-                timeout=10.0,
-            )
-        except TimeoutError:
-            await websocket.close(
-                code=1008,
-                reason="Registration timeout",
-            )
-            return
+        self._on_start = on_start
+        self._on_stop = on_stop
+        self._started = False
 
-        try:
-            registration = RegisterAgentRequest.model_validate_json(raw)
-        except ValidationError:
-            await websocket.close(
-                code=1008,
-                reason="Invalid registration",
-            )
-            return
+        self._operations: dict[str, Operation] = {}
+        self._monitors: dict[str, Monitor] = {}
 
-        try:
-            connection = await registry.register(
-                description=registration.agent,
-                websocket=websocket,
-            )
-        except AgentAlreadyConnectedError:
-            await websocket.close(
-                code=1008,
-                reason="Agent ID already connected",
-            )
-            return
+    def register_operation(
+        self,
+        *,
+        name: str,
+        request_model: type[BaseModel],
+        handler: Callable[[Any], Awaitable[Any]],
+    ) -> None:
+    
+        if not name or name in self._operations:
+            raise ValueError(f"Invalid or duplicate operation: {name}")
 
-        registered_agent_id = registration.agent.agent_id
+        self._operations[name] = Operation(request_model, handler)
 
-        accepted = RegisterAgentAccepted(
-            agent_id=registered_agent_id,
-        )
+    def register_monitor(
+        self,
+        *,
+        name: str,
+        value_model: type[BaseModel],
+        reader: Callable[[], Awaitable[BaseModel]],
+    ) -> None:
+        if not name or name in self._monitors:
+            raise ValueError(f"Invalid or duplicate monitor: {name}")
 
-        async with connection.send_lock:
-            await websocket.send_text(accepted.model_dump_json())
+        self._monitors[name] = Monitor(value_model, reader)
 
-        # 現段階では登録後のメッセージ処理は未実装。
-        # disconnect を受信するまで接続を保持する。
-        while True:
-            message = await websocket.receive()
+    def validate_operation(
+        self,
+        name: str,
+        payload: dict[str, Any],
+    ) -> BaseModel:
+        """操作名に対応するモデルで入力を検証する。"""
+        operation = self._operations[name]
+        return operation.request_model.model_validate(payload)
 
-            if message["type"] == "websocket.disconnect":
-                break
+    async def run_operation(
+        self,
+        name: str,
+        request: BaseModel,
+    ) -> None:
+        """永続受付後に、検証済みの引数で操作を実行する。"""
+        operation = self._operations[name]
 
-            await websocket.close(
-                code=1008,
-                reason="Post-registration messages not implemented",
-            )
-            break
+        if not isinstance(request, operation.request_model):
+            raise TypeError(f"Unexpected request model for: {name}")
 
-    except WebSocketDisconnect:
-        pass
+        await operation.handler(request)
 
-    finally:
-        if registered_agent_id is not None:
-            await registry.unregister(
-                agent_id=registered_agent_id,
-                websocket=websocket,
-            )
+    async def read_monitor(self, name: str) -> BaseModel:
+        monitor = self._monitors[name]
+        value = await monitor.reader()
+        return monitor.value_model.model_validate(value.model_dump())
+
+    def operation_request_model(self, name: str) -> type[BaseModel]:
+        operation = self._operations[name]
+        return OperationRequest[operation.request_model]
+
+    def describe(self) -> dict[str, Any]:
+        return {
+            "agent_id": self.agent_id,
+            "device_type": self.device_type,
+            "operations": {
+                name: {
+                    "request_schema": operation.request_model.model_json_schema(),
+                }
+                for name, operation in self._operations.items()
+            },
+            "monitors": {
+                name: {
+                    "state_schema": monitor.value_model.model_json_schema(
+                        mode="serialization",
+                    ),
+                }
+                for name, monitor in self._monitors.items()
+            },
+        }
+
+    async def start(self) -> None:
+        if not self._started:
+            await self._on_start()
+            self._started = True
+
+    async def stop(self) -> None:
+        if self._started:
+            await self._on_stop()
+            self._started = False
