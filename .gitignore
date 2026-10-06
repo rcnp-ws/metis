@@ -28,3 +28,4 @@ docs/node_modules
 # base fixture builds
 __tests__/base/fixture/.vitepress/dist-*
 
+*.db
