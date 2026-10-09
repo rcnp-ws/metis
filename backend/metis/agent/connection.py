@@ -259,18 +259,35 @@ async def publish_monitors(
     agent: GenericAgent,
     send: Callable[[BaseModel], Awaitable[None]],
     interval: float = 1.0,
+    publish_interval: float = 60.0,
 ) -> None:
-    """接続直後と、値が変化したときに監視値を送る。"""
+    """変化時と一定周期に、最新の取得値を送信する。"""
+    if interval <= 0 or publish_interval <= 0:
+        raise ValueError("Intervals must be positive")
+
     previous: dict[str, dict[str, Any]] = {}
+    last_sent: dict[str, float] = {}
+
     monitor_names = list(agent.describe()["monitors"])
+    loop = asyncio.get_running_loop()
 
     while True:
         for name in monitor_names:
             value = await agent.read_monitor(name)
             acquired_at = datetime.now(timezone.utc)
             data = value.model_dump(mode="json")
+            now = loop.time()
 
-            if name in previous and previous[name] == data:
+            changed = (
+                name not in previous
+                or previous[name] != data
+            )
+            periodic = (
+                name not in last_sent
+                or now - last_sent[name] >= publish_interval
+            )
+
+            if not changed and not periodic:
                 continue
 
             message = MonitorPublish(
@@ -286,10 +303,12 @@ async def publish_monitors(
             )
 
             await send(message)
+
+            # 送信に成功した後に更新する。
             previous[name] = data
+            last_sent[name] = loop.time()
 
         await asyncio.sleep(interval)
-
 
 async def receive_requests(
     agent: GenericAgent,
